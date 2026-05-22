@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>레이스먼트 가로수길 — Morning Briefing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#F6F7F9;
+  --card:#FFFFFF;
+  --border:#E5E7EB;
+  --text:#111827;
+  --text-sub:#6B7280;
+  --text-hint:#9CA3AF;
+  --orange:#FF5A1F;
+  --orange-light:#FFF0EB;
+  --good:#16A34A;
+  --good-bg:#F0FDF4;
+  --warn:#F59E0B;
+  --warn-bg:#FFFBEB;
+  --danger:#DC2626;
+  --danger-bg:#FEF2F2;
+  --muted:#6B7280;
+  --muted-bg:#F3F4F6;
+  --radius:18px;
+  --radius-sm:10px;
+  --shadow:0 8px 24px rgba(15,23,42,0.06);
+  --shadow-strong:0 12px 32px rgba(15,23,42,0.10);
+}
+
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+
+/* ── HEADER ── */
+.header{height:68px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 var(--border)}
+.header-left{display:flex;align-items:center;gap:16px}
+.header-logo{font-size:18px;font-weight:900;letter-spacing:-0.5px;color:var(--text)}
+.header-logo-dot{color:var(--orange)}
+.header-store{font-size:13px;color:var(--text-sub);font-weight:500;padding:4px 10px;background:var(--bg);border-radius:20px}
+.header-date{font-size:14px;color:var(--text-sub);font-weight:500}
+.period-toggle{display:flex;background:var(--bg);border-radius:24px;padding:4px;gap:2px;border:1px solid var(--border)}
+.period-btn{padding:6px 20px;border-radius:20px;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--text-sub);cursor:pointer;font-family:inherit;transition:all 0.18s}
+.period-btn.active{background:var(--text);color:#fff}
+
+/* ── MAIN ── */
+.main{padding:28px 36px 110px;max-width:1440px;margin:0 auto}
+.screen{display:none}
+.screen.is-active{display:block}
+
+/* ── CARD ── */
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:24px}
+.card-title{font-size:13px;font-weight:700;color:var(--text-sub);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:16px}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:0.7}
+.badge-good{background:var(--good-bg);color:var(--good)}
+.badge-warn{background:var(--warn-bg);color:#B45309}
+.badge-danger{background:var(--danger-bg);color:var(--danger)}
+.badge-muted{background:var(--muted-bg);color:var(--muted)}
+
+/* ── EMPTY ── */
+.empty{background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;color:var(--text-hint);font-size:14px;line-height:1.7}
+
+/* ── LOADING OVERLAY ── */
+.loading-overlay{position:fixed;inset:0;background:rgba(246,247,249,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:16px}
+.loading-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin 0.7s linear infinite}
+.loading-text{font-size:14px;color:var(--text-sub);font-weight:500}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay.hidden{display:none}
+
+/* ═══════════════════════
+   HOME LAYOUT
+═══════════════════════ */
+.row{margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+
+/* ═══════════════════════
+   C01
+═══════════════════════ */
+.c01-card{background:linear-gradient(135deg,#111827 0%,#1F2937 100%);border-radius:var(--radius);border:none;box-shadow:var(--shadow-strong);padding:28px 32px;display:flex;flex-direction:column;justify-content:space-between;min-height:160px}
+.c01-label{font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+.c01-text{font-size:18px;font-weight:500;color:#fff;line-height:1.65;flex:1}
+.c01-text.empty-text{color:rgba(255,255,255,0.35);font-size:15px}
+.c01-meta{display:flex;align-items:center;gap:8px;margin-top:18px}
+.c01-dot{width:6px;height:6px;border-radius:50%;background:var(--orange)}
+.c01-meta-text{font-size:12px;color:rgba(255,255,255,0.35)}
+
+/* ═══════════════════════
+   C02
+═══════════════════════ */
+.goal-row{padding:18px 0;border-bottom:1px solid var(--border)}
+.goal-row:last-child{border-bottom:none;padding-bottom:0}
+.goal-row:first-child{padding-top:0}
+.goal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.goal-period{font-size:14px;font-weight:700;color:var(--text)}
+.goal-numbers{display:flex;align-items:baseline;gap:6px}
+.goal-actual{font-size:24px;font-weight:900;letter-spacing:-0.5px}
+.goal-target{font-size:13px;color:var(--text-hint)}
+.goal-bar-wrap{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin-bottom:8px}
+.goal-bar{height:100%;border-radius:99px;transition:width 0.5s ease}
+.bar-good{background:var(--good)}
+.bar-warn{background:var(--warn)}
+.bar-danger{background:var(--danger)}
+.bar-muted{background:#D1D5DB}
+.goal-bottom{display:flex;align-items:center;justify-content:space-between}
+.goal-rate{font-size:13px;font-weight:700}
+.goal-remain{font-size:12px;color:var(--text-hint)}
+.goal-comment{margin-top:18px;padding:14px 16px;background:var(--orange-light);border-radius:var(--radius-sm);border-left:3px solid var(--orange);font-size:14px;color:#9A3412;line-height:1.6}
+
+/* ═══════════════════════
+   C03
+═══════════════════════ */
+.product-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.product-item:last-child{border-bottom:none}
+.product-rank{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:var(--bg);color:var(--text-hint);flex-shrink:0}
+.product-rank.rank-1{background:var(--orange);color:#fff}
+.product-name{flex:1;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.product-value{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap}
+
+/* ═══════════════════════
+   C04
+═══════════════════════ */
+.issue-item{padding:14px 0;border-bottom:1px solid var(--border)}
+.issue-item:last-child{border-bottom:none}
+.issue-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.issue-type{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+/* 이슈 유형 key 기반 CSS 클래스 */
+.type-erp_mismatch{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+.type-size_shortage{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+.type-product_damage{background:#F5F3FF;color:#5B21B6;border:1px solid #DDD6FE}
+.issue-status-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;margin-left:auto}
+.s-미확인{background:var(--danger-bg);color:var(--danger)}
+.s-확인중{background:var(--warn-bg);color:#92400E}
+.issue-product-name{font-size:15px;font-weight:700;margin-bottom:4px}
+.issue-desc{font-size:13px;color:var(--text-sub);line-height:1.5}
+.issue-meta{font-size:12px;color:var(--text-hint);margin-top:6px}
+.issue-more{text-align:center;padding:12px;font-size:13px;color:var(--text-hint);border-top:1px solid var(--border)}
+
+/* ═══════════════════════
+   C05
+═══════════════════════ */
+.noreason-item{padding:12px 0;border-bottom:1px solid var(--border)}
+.noreason-item:last-child{border-bottom:none}
+.noreason-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.noreason-left{display:flex;align-items:center;gap:10px}
+.noreason-num{font-size:11px;font-weight:900;color:#fff;background:var(--text-hint);width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.noreason-num.n1{background:var(--danger)}
+.noreason-name{font-size:14px;font-weight:700}
+.noreason-count{font-size:14px;font-weight:700}
+.noreason-bar-wrap{height:6px;background:var(--bg);border-radius:99px;overflow:hidden}
+.noreason-bar{height:100%;border-radius:99px;background:var(--text)}
+.noreason-comment{margin-top:16px;padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:13px;color:var(--text-sub);line-height:1.6}
+
+/* ═══════════════════════
+   C06
+═══════════════════════ */
+.feedback-item{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:12px}
+.feedback-item:last-child{border-bottom:none}
+.feedback-label{font-size:14px;color:var(--text-sub);width:110px;flex-shrink:0}
+.stars-wrap{display:flex;gap:2px;flex:1}
+.star-dot{font-size:18px;line-height:1}
+.star-filled{color:#F59E0B}
+.star-empty{color:#E5E7EB}
+.feedback-score{font-size:22px;font-weight:900;color:var(--text);letter-spacing:-0.5px}
+.feedback-count{font-size:12px;color:var(--text-hint);text-align:right;margin-top:12px}
+
+/* ═══════════════════════
+   C07/C08
+═══════════════════════ */
+.event-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
+.event-stat{background:var(--bg);border-radius:var(--radius-sm);padding:16px 12px;text-align:center}
+.event-stat-num{font-size:28px;font-weight:900;line-height:1;letter-spacing:-1px}
+.event-stat-unit{font-size:14px;font-weight:400}
+.event-stat-label{font-size:11px;color:var(--text-hint);margin-top:6px;font-weight:600}
+.rate-good{color:var(--good)}
+.rate-warn{color:var(--warn)}
+.rate-danger{color:var(--danger)}
+
+/* ═══════════════════════
+   C09
+═══════════════════════ */
+.c09-card{background:linear-gradient(135deg,#FF5A1F 0%,#EA4400 100%);border-radius:var(--radius);border:none;box-shadow:var(--shadow-strong);padding:28px 32px}
+.c09-label{font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+.action-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.action-item{display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,0.12);border-radius:12px;padding:14px 16px}
+.action-check{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;color:#fff;font-weight:900;margin-top:1px}
+.action-text{font-size:15px;font-weight:600;color:#fff;line-height:1.5}
+.note-item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.15)}
+.note-item:last-child{border-bottom:none}
+.note-level{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;flex-shrink:0;margin-top:1px}
+.nl-high{background:rgba(220,38,38,0.25);color:#FCA5A5}
+.nl-mid{background:rgba(245,158,11,0.25);color:#FCD34D}
+.nl-low{background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6)}
+.note-text{font-size:14px;font-weight:500;color:#fff;line-height:1.5}
+.c09-action-empty{background:rgba(255,255,255,0.1);border:1px dashed rgba(255,255,255,0.3);border-radius:var(--radius-sm);padding:20px;text-align:center;color:rgba(255,255,255,0.5);font-size:14px}
+
+/* ═══════════════════════
+   FORM
+═══════════════════════ */
+.form-wrap{max-width:620px;margin:0 auto}
+.form-heading{font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:6px}
+.form-subheading{font-size:14px;color:var(--text-sub);margin-bottom:32px}
+.form-step{margin-bottom:28px}
+.step-label{font-size:12px;font-weight:700;color:var(--text-hint);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+.btn-group{display:flex;flex-wrap:wrap;gap:8px}
+.btn-opt{padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);font-size:14px;font-weight:600;color:var(--text-sub);cursor:pointer;font-family:inherit;transition:all 0.15s}
+.btn-opt:hover{border-color:var(--text);color:var(--text)}
+.btn-opt.sel{background:var(--text);color:#fff;border-color:var(--text)}
+.f-label{font-size:13px;font-weight:600;color:var(--text-sub);margin-bottom:6px;display:block}
+.f-label .req{color:var(--danger)}
+.f-input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;color:var(--text);background:var(--card);transition:border-color 0.15s;outline:none}
+.f-input:focus{border-color:var(--text)}
+.f-input.ta{min-height:90px;resize:vertical}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-save{width:100%;padding:16px;background:var(--text);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity 0.15s;letter-spacing:-0.3px}
+.btn-save:hover{opacity:0.85}
+.btn-save:disabled{opacity:0.45;cursor:not-allowed}
+.setting-section{margin-bottom:32px}
+.setting-title{font-size:15px;font-weight:700;padding-bottom:12px;border-bottom:2px solid var(--border);margin-bottom:16px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--text);color:#fff;padding:12px 28px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:all 0.22s ease;z-index:500;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--danger)}
+
+/* ── TAB BAR ── */
+.tab-bar{position:fixed;left:0;right:0;bottom:0;height:72px;background:var(--card);border-top:1px solid var(--border);display:flex;align-items:stretch;z-index:300;box-shadow:0 -4px 16px rgba(15,23,42,0.06)}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:transparent;font-family:inherit;font-size:11px;font-weight:600;color:var(--text-hint);cursor:pointer;transition:color 0.15s;padding:8px 4px}
+.tab-btn .t-icon{font-size:20px;line-height:1}
+.tab-btn.active{color:var(--orange)}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">데이터를 불러오는 중...</div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="header-logo">RACE<span class="header-logo-dot">·</span>MENT</div>
+    <div class="header-store">가로수길</div>
+  </div>
+  <div class="header-date" id="header-date"></div>
+  <div class="period-toggle">
+    <button class="period-btn active" data-period="today" onclick="setPeriod('today')">오늘</button>
+    <button class="period-btn" data-period="week" onclick="setPeriod('week')">이번 주</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ════ 홈 ════ -->
+<div id="screen-home" class="screen is-active">
+
+  <!-- C01: 전체 너비 -->
+  <div class="row">
+    <div class="c01-card">
+      <div class="c01-label">오늘의 매장 상태</div>
+      <div class="c01-text" id="c01-text"></div>
+      <div class="c01-meta">
+        <div class="c01-dot"></div>
+        <div class="c01-meta-text" id="c01-meta"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C02: 전체 너비 -->
+  <div class="row">
+    <div class="card">
+      <div class="card-title">목표 매출 현황 <span id="c02-period" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint);font-size:11px"></span></div>
+      <div id="c02-body"></div>
+    </div>
+  </div>
+
+  <!-- C09: C02 바로 아래 배치 — 오늘 무엇을 해야 하는지 바로 인지 -->
+  <div class="row">
+    <div class="c09-card">
+      <div id="c09-notes-section"></div>
+      <div class="c09-label">오늘의 액션</div>
+      <div id="c09-actions"></div>
+    </div>
+  </div>
+
+  <!-- C03: 2열 -->
+  <div class="row grid-2">
+    <div class="card">
+      <div class="card-title">많이 팔린 상품 <span id="c03-period-qty" style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint)"></span></div>
+      <div id="c03-qty"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">매출을 만든 상품 <span id="c03-period-sales" style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint)"></span></div>
+      <div id="c03-sales"></div>
+    </div>
+  </div>
+
+  <!-- C04: 전체 너비 -->
+  <div class="row">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:0">제품 이슈 <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint)">오늘 기준</span></div>
+        <span id="c04-badge"></span>
+      </div>
+      <div id="c04-body"></div>
+    </div>
+  </div>
+
+  <!-- C05: 전체 너비 -->
+  <div class="row">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:0">미구매 사유 <span id="c05-period" style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint)"></span></div>
+        <span id="c05-badge" class="badge badge-muted"></span>
+      </div>
+      <div id="c05-body"></div>
+    </div>
+  </div>
+
+  <!-- C06 / C07 / C08: 3열 -->
+  <div class="row grid-3">
+    <div class="card">
+      <div class="card-title">고객 피드백 요약 <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint)">이번 주</span></div>
+      <div id="c06-body"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">세이프사이즈 성과 <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint)">오늘</span></div>
+      <div id="c07-body"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">SNS 인증 이벤트 <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint)">오늘</span></div>
+      <div id="c08-body"></div>
+    </div>
+  </div>
+
+</div><!-- /screen-home -->
+
+<!-- ════ 제품이슈 폼 ════ -->
+<div id="screen-productIssue" class="screen">
+  <div class="form-wrap">
+    <div class="form-heading">제품 이슈 등록</div>
+    <div class="form-subheading">직원이 발견한 제품 관련 이슈를 기록합니다.</div>
+    <div class="form-step">
+      <div class="step-label">Step 1. 이슈 유형 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <!-- label / key 분리 -->
+        <button class="btn-opt" data-key="erp_mismatch" onclick="sel(this,'issueType')">ERP 재고 불일치</button>
+        <button class="btn-opt" data-key="size_shortage" onclick="sel(this,'issueType')">사이즈 부족</button>
+        <button class="btn-opt" data-key="product_damage" onclick="sel(this,'issueType')">제품 파손/오염/불량</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 2. 상품 정보</div>
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">브랜드 <span class="req">*</span></label><input class="f-input" id="i-brand" placeholder="예: 나이키"></div>
+        <div><label class="f-label">상품명 <span class="req">*</span></label><input class="f-input" id="i-product" placeholder="예: 페가수스 42"></div>
+      </div>
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">색상</label><input class="f-input" id="i-color" placeholder="예: 블랙"></div>
+        <div><label class="f-label">사이즈</label><input class="f-input" id="i-size" placeholder="예: 275"></div>
+      </div>
+      <div class="f-grid">
+        <div><label class="f-label">ERP 재고</label><input class="f-input" id="i-erp" type="number" placeholder="0"></div>
+        <div><label class="f-label">실재고</label><input class="f-input" id="i-real" type="number" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 3. 이슈 내용 및 작성자</div>
+      <label class="f-label">이슈 내용 <span class="req">*</span></label>
+      <textarea class="f-input ta" id="i-content" placeholder="이슈 내용을 입력하세요" style="margin-bottom:10px"></textarea>
+      <label class="f-label">작성자</label>
+      <input class="f-input" id="i-author" placeholder="이름">
+    </div>
+    <button class="btn-save" id="btn-issue" onclick="submitForm('issue')">저장하기</button>
+  </div>
+</div>
+
+<!-- ════ 미구매 사유 폼 ════ -->
+<div id="screen-noPurchase" class="screen">
+  <div class="form-wrap">
+    <div class="form-heading">미구매 사유 등록</div>
+    <div class="form-subheading">고객이 구매하지 않은 이유를 기록합니다.</div>
+    <div class="form-step">
+      <div class="step-label">Step 1. 카테고리 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" onclick="sel(this,'nr-cat')">신발</button>
+        <button class="btn-opt" onclick="sel(this,'nr-cat')">의류</button>
+        <button class="btn-opt" onclick="sel(this,'nr-cat')">용품</button>
+        <button class="btn-opt" onclick="sel(this,'nr-cat')">기타</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 2. 미구매 사유 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">사이즈/재고 부족</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">착화감 불만</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">가격 부담</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">디자인/컬러 불만</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">원하는 상품/브랜드 없음</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">비교 후 고민</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">구매 시점 아님</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">기타/직원 메모 필요</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 3. 상세 정보</div>
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">브랜드</label><input class="f-input" id="nr-brand" placeholder="예: 온러닝"></div>
+        <div><label class="f-label">상품명</label><input class="f-input" id="nr-product" placeholder="예: 클라우드몬스터 3"></div>
+      </div>
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">사이즈</label><input class="f-input" id="nr-size" placeholder="예: 260"></div>
+        <div><label class="f-label">작성자</label><input class="f-input" id="nr-author" placeholder="이름"></div>
+      </div>
+      <label class="f-label">메모</label>
+      <textarea class="f-input ta" id="nr-memo" placeholder="추가 메모" style="min-height:70px"></textarea>
+    </div>
+    <button class="btn-save" id="btn-noreason" onclick="submitForm('noreason')">저장하기</button>
+  </div>
+</div>
+
+<!-- ════ 특이사항 폼 ════ -->
+<div id="screen-specialNote" class="screen">
+  <div class="form-wrap">
+    <div class="form-heading">오늘의 특이사항</div>
+    <div class="form-subheading">오늘 매장에서 발생한 특이한 상황을 기록합니다.</div>
+    <div class="form-step">
+      <div class="step-label">Step 1. 내용 <span style="color:var(--danger)">*</span></div>
+      <textarea class="f-input ta" id="note-content" placeholder="예: 러닝 크루 단체 방문 예정 (오후 3시)" style="min-height:100px"></textarea>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 2. 중요도</div>
+      <div class="btn-group" id="note-level-group">
+        <button class="btn-opt" onclick="sel(this,'note-level')">낮음</button>
+        <button class="btn-opt sel" onclick="sel(this,'note-level')">보통</button>
+        <button class="btn-opt" onclick="sel(this,'note-level')">높음</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 3. 후속 조치 및 작성자</div>
+      <div class="btn-group" id="note-followup-group" style="margin-bottom:12px">
+        <button class="btn-opt" onclick="sel(this,'note-followup')">후속 조치 필요</button>
+        <button class="btn-opt sel" onclick="sel(this,'note-followup')">불필요</button>
+      </div>
+      <label class="f-label">작성자</label>
+      <input class="f-input" id="note-author" placeholder="이름">
+    </div>
+    <button class="btn-save" id="btn-note" onclick="submitForm('note')">저장하기</button>
+  </div>
+</div>
+
+<!-- ════ 세이프사이즈 폼 ════ -->
+<div id="screen-safeSize" class="screen">
+  <div class="form-wrap">
+    <div class="form-heading">세이프사이즈 체크</div>
+    <div class="form-subheading">족형분석 서비스 진행 내용을 기록합니다.</div>
+    <div class="form-step">
+      <div class="step-label">Step 1. 세이프사이즈 진행 여부 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" onclick="sel(this,'ss-proc')">Y — 진행함</button>
+        <button class="btn-opt" onclick="sel(this,'ss-proc')">N — 진행 안 함</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 2. 구매 여부 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" onclick="sel(this,'ss-buy')">Y — 구매함</button>
+        <button class="btn-opt" onclick="sel(this,'ss-buy')">N — 구매 안 함</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 3. 상세 정보</div>
+      <div class="step-label" style="margin-bottom:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text-sub)">러닝 목적</div>
+      <div class="btn-group" style="margin-bottom:14px">
+        <button class="btn-opt" onclick="sel(this,'ss-purpose')">건강 달리기</button>
+        <button class="btn-opt" onclick="sel(this,'ss-purpose')">대회 준비</button>
+        <button class="btn-opt" onclick="sel(this,'ss-purpose')">부상 회복</button>
+        <button class="btn-opt" onclick="sel(this,'ss-purpose')">기타</button>
+      </div>
+      <label class="f-label">구매 상품</label>
+      <input class="f-input" id="ss-product" placeholder="예: 클라우드몬스터 3" style="margin-bottom:10px">
+      <label class="f-label">고객 반응 메모</label>
+      <textarea class="f-input ta" id="ss-memo" placeholder="예: 발볼 설명 후 만족" style="min-height:70px;margin-bottom:10px"></textarea>
+      <label class="f-label">작성자</label>
+      <input class="f-input" id="ss-author" placeholder="이름">
+    </div>
+    <button class="btn-save" id="btn-safesize" onclick="submitForm('safesize')">저장하기</button>
+  </div>
+</div>
+
+<!-- ════ SNS 폼 ════ -->
+<div id="screen-sns" class="screen">
+  <div class="form-wrap">
+    <div class="form-heading">SNS 인증 이벤트 체크</div>
+    <div class="form-subheading">SNS 인증 이벤트 참여 내용을 기록합니다.</div>
+    <div class="form-step">
+      <div class="step-label">Step 1. SNS 인증 참여 여부 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" onclick="sel(this,'sns-part')">Y — 참여함</button>
+        <button class="btn-opt" onclick="sel(this,'sns-part')">N — 참여 안 함</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 2. 구매 여부 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" onclick="sel(this,'sns-buy')">Y — 구매함</button>
+        <button class="btn-opt" onclick="sel(this,'sns-buy')">N — 구매 안 함</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">Step 3. 상세 정보</div>
+      <div class="step-label" style="margin-bottom:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text-sub)">인증 채널</div>
+      <div class="btn-group" style="margin-bottom:14px">
+        <button class="btn-opt" onclick="sel(this,'sns-ch')">인스타그램</button>
+        <button class="btn-opt" onclick="sel(this,'sns-ch')">블로그</button>
+        <button class="btn-opt" onclick="sel(this,'sns-ch')">기타</button>
+      </div>
+      <div class="step-label" style="margin-bottom:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text-sub)">혜택 제공 여부</div>
+      <div class="btn-group" style="margin-bottom:14px">
+        <button class="btn-opt" onclick="sel(this,'sns-benefit')">Y — 제공함</button>
+        <button class="btn-opt" onclick="sel(this,'sns-benefit')">N — 미제공</button>
+      </div>
+      <label class="f-label">고객 반응 메모</label>
+      <textarea class="f-input ta" id="sns-memo" placeholder="예: 인증 후 구매 보류, 재방문 예정" style="min-height:70px;margin-bottom:10px"></textarea>
+      <label class="f-label">작성자</label>
+      <input class="f-input" id="sns-author" placeholder="이름">
+    </div>
+    <button class="btn-save" id="btn-sns" onclick="submitForm('sns')">저장하기</button>
+  </div>
+</div>
+
+<!-- ════ 점장 설정 ════ -->
+<div id="screen-manager" class="screen">
+  <div class="form-wrap">
+    <div class="form-heading">점장 설정</div>
+    <div class="form-subheading">홈 화면에 표시될 오늘의 방향과 액션을 입력합니다.</div>
+    <div class="setting-section">
+      <div class="setting-title">오늘의 매장 상태 문장</div>
+      <textarea class="f-input ta" id="set-status" placeholder="예: 오늘은 목표 대비 흐름이 부족합니다." style="min-height:100px"></textarea>
+    </div>
+    <div class="setting-section">
+      <div class="setting-title">오늘의 액션</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input class="f-input" id="set-a1" placeholder="액션 1">
+        <input class="f-input" id="set-a2" placeholder="액션 2">
+        <input class="f-input" id="set-a3" placeholder="액션 3">
+        <input class="f-input" id="set-a4" placeholder="액션 4">
+        <input class="f-input" id="set-a5" placeholder="액션 5">
+      </div>
+    </div>
+    <div class="setting-section">
+      <div class="setting-title">점장 코멘트</div>
+      <label class="f-label" style="margin-bottom:6px">매출 코멘트</label>
+      <textarea class="f-input ta" id="set-c-sales" placeholder="매출 관련 코멘트" style="min-height:70px;margin-bottom:12px"></textarea>
+      <label class="f-label" style="margin-bottom:6px">상품 코멘트</label>
+      <textarea class="f-input ta" id="set-c-product" placeholder="상품 관련 코멘트" style="min-height:70px;margin-bottom:12px"></textarea>
+      <label class="f-label" style="margin-bottom:6px">미구매 코멘트</label>
+      <textarea class="f-input ta" id="set-c-noreason" placeholder="미구매 관련 코멘트" style="min-height:70px"></textarea>
+    </div>
+    <button class="btn-save" id="btn-setting" onclick="submitForm('setting')">저장하기</button>
+  </div>
+</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" data-sc="home" onclick="showScreen('home')"><span class="t-icon">🏠</span><span>홈</span></button>
+  <button class="tab-btn" data-sc="productIssue" onclick="showScreen('productIssue')"><span class="t-icon">⚠️</span><span>제품이슈</span></button>
+  <button class="tab-btn" data-sc="noPurchase" onclick="showScreen('noPurchase')"><span class="t-icon">📝</span><span>미구매</span></button>
+  <button class="tab-btn" data-sc="specialNote" onclick="showScreen('specialNote')"><span class="t-icon">📌</span><span>특이사항</span></button>
+  <button class="tab-btn" data-sc="safeSize" onclick="showScreen('safeSize')"><span class="t-icon">👟</span><span>세이프사이즈</span></button>
+  <button class="tab-btn" data-sc="sns" onclick="showScreen('sns')"><span class="t-icon">📸</span><span>SNS</span></button>
+  <button class="tab-btn" data-sc="manager" onclick="showScreen('manager')"><span class="t-icon">⚙️</span><span>점장설정</span></button>
+</nav>
+
+<script>
+// ══════════════════════════════════════
+// 환경 감지
+// Apps Script 환경이면 IS_GAS=true, 브라우저 직접 열기면 false
+// ══════════════════════════════════════
+const IS_GAS = typeof google !== 'undefined' && typeof google.script !== 'undefined';
+
+// ══════════════════════════════════════
+// MOCK DATA (개발/테스트 fallback 전용)
+// 실제 GAS 환경에서는 getDashboardData()가 성공하면 사용되지 않음
+// ══════════════════════════════════════
+const MOCK = {
+  storeStatus:{text:'오늘은 목표 대비 흐름이 부족합니다. 마감 전 신발 구매 고객 대상 용품 연계 제안을 강화합니다.',updatedAt:'09:30',author:'점장'},
+  salesGoal:{
+    daily:{goal:3000000,actual:1800000,rate:60,status:'위험'},
+    weekly:{goal:20000000,actual:12500000,rate:62,status:'위험'},
+    monthly:{goal:80000000,actual:48000000,rate:60,status:'위험'},
+    managerComment:'마감 전 객단가 상승이 필요합니다. 신발 구매 고객에게 용품 연계를 적극 제안하세요.'
+  },
+  productFlow:{
+    today:{
+      topByQty:[{name:'마인드 001',qty:8},{name:'클라우드몬스터 3',qty:5},{name:'아미노샷 퍼펙트 에너지',qty:4},{name:'하이퍼부스트 엣지',qty:3},{name:'S/LAB 울트라 썸머 캡',qty:2}],
+      topBySales:[{name:'클라우드몬스터 3',amount:1145000},{name:'보메로 프리미엄 NRG',amount:897000},{name:'하이퍼부스트 엣지',amount:813000},{name:'본디 9 와이드',amount:458000},{name:'ACG 제가마 트레일',amount:366000}]
+    },
+    week:{
+      topByQty:[{name:'마인드 001',qty:42},{name:'클라우드몬스터 3',qty:28},{name:'아미노샷 퍼펙트 에너지',qty:21},{name:'하이퍼부스트 엣지',qty:17},{name:'우아 슬라이드',qty:14}],
+      topBySales:[{name:'클라우드몬스터 3',amount:6412000},{name:'보메로 프리미엄 NRG',amount:4485000},{name:'하이퍼부스트 엣지',amount:4063000},{name:'본디 9 와이드',amount:2748000},{name:'ACG 제가마 트레일',amount:2196000}]
+    },
+    managerComment:'온러닝 신발 반응이 좋습니다. 관련 양말/인솔 연계를 강화합니다.'
+  },
+  issues:{
+    pending:[
+      {type:'size_shortage',typeLabel:'사이즈 부족',brand:'나이키',product:'페가수스 42',size:'275',content:'275 사이즈 재고 없음',status:'미확인',author:'임창성',date:'2026-05-21'},
+      {type:'erp_mismatch',typeLabel:'ERP 재고 불일치',brand:'온러닝',product:'클라우드몬스터 3',size:'260',content:'ERP 2개 / 실재고 0개',status:'확인중',author:'박민수',date:'2026-05-21'}
+    ],
+    pendingTotal:2
+  },
+  noReasons:{
+    today:{total:4,top3:[{reason:'사이즈/재고 부족',count:2},{reason:'가격 부담',count:1},{reason:'비교 후 고민',count:1}]},
+    week:{total:12,top3:[{reason:'사이즈/재고 부족',count:5},{reason:'가격 부담',count:3},{reason:'비교 후 고민',count:2}]},
+    managerComment:'사이즈 부족 고객에게 대체 모델을 제안합니다.'
+  },
+  feedback:{week:{count:18,satisfaction:4.3,recommendation:4.1,revisit:4.5}},
+  safeSize:{today:{participants:7,conversions:4,rate:57}},
+  snsEvent:{today:{participants:5,conversions:2,rate:40}},
+  todayNotes:[
+    {level:'높음',content:'러닝 크루 단체 방문 예정 (오후 3시)',followUp:true},
+    {level:'보통',content:'외국인 고객 유입이 많았음',followUp:false}
+  ],
+  todayActions:['신발 구매 고객에게 양말, 인솔 연계 제안하기','ERP 재고 불일치 상품 실재고 먼저 확인하기','세이프사이즈 이용 고객에게 추천 근거 명확히 설명하기']
+};
+
+// ══════════════════════════════════════
+// 이슈 유형 label ↔ key 매핑
+// ══════════════════════════════════════
+const ISSUE_TYPE_MAP = {
+  erp_mismatch:  'ERP 재고 불일치',
+  size_shortage: '사이즈 부족',
+  product_damage:'제품 파손/오염/불량'
+};
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let period = 'today';
+let dashData = null;
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  setDate();
+  loadDashboardData();
+});
+
+function setDate() {
+  const days = ['일','월','화','수','목','금','토'];
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  document.getElementById('header-date').textContent = `${y}.${m}.${d} ${days[now.getDay()]}요일`;
+}
+
+// ══════════════════════════════════════
+// 데이터 로딩
+// GAS 환경: google.script.run 호출
+// 브라우저 환경: MOCK 데이터 fallback
+// ══════════════════════════════════════
+function loadDashboardData() {
+  showLoading(true);
+
+  if (IS_GAS) {
+    google.script.run
+      .withSuccessHandler(function(d) {
+        dashData = d;
+        render(dashData);
+        showLoading(false);
+      })
+      .withFailureHandler(function(err) {
+        console.error('[loadDashboardData] 실패:', err);
+        // GAS 실패 시 빈 상태로 표시
+        dashData = buildEmptyData();
+        render(dashData);
+        showLoading(false);
+        showToast('데이터 로딩에 실패했습니다.', true);
+      })
+      .getDashboardData(period);
+  } else {
+    // 브라우저 직접 열기: MOCK 데이터로 동작
+    setTimeout(() => {
+      dashData = MOCK;
+      render(dashData);
+      showLoading(false);
+    }, 400);
+  }
+}
+
+function buildEmptyData() {
+  return {
+    storeStatus:{text:'',updatedAt:'',author:''},
+    salesGoal:{daily:{goal:0,actual:0,rate:null,status:'unknown'},weekly:{goal:0,actual:0,rate:null,status:'unknown'},monthly:{goal:0,actual:0,rate:null,status:'unknown'},managerComment:''},
+    productFlow:{today:{topByQty:[],topBySales:[]},week:{topByQty:[],topBySales:[]},managerComment:''},
+    issues:{pending:[],pendingTotal:0},
+    noReasons:{today:{total:0,top3:[]},week:{total:0,top3:[]},managerComment:''},
+    feedback:{week:{count:0,satisfaction:null,recommendation:null,revisit:null}},
+    safeSize:{today:{participants:0,conversions:0,rate:null}},
+    snsEvent:{today:{participants:0,conversions:0,rate:null}},
+    todayNotes:[],
+    todayActions:[]
+  };
+}
+
+function showLoading(on) {
+  document.getElementById('loading-overlay').classList.toggle('hidden', !on);
+}
+
+// ══════════════════════════════════════
+// SCREEN
+// ══════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('is-active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const s = document.getElementById('screen-'+name);
+  if(s) s.classList.add('is-active');
+  const t = document.querySelector(`.tab-btn[data-sc="${name}"]`);
+  if(t) t.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════
+// PERIOD TOGGLE
+// ══════════════════════════════════════
+function setPeriod(p) {
+  period = p;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b.dataset.period===p));
+  if(dashData) {
+    renderC02(dashData.salesGoal);
+    renderC03(dashData.productFlow);
+    renderC05(dashData.noReasons);
+  }
+}
+
+// ══════════════════════════════════════
+// FORMAT
+// ══════════════════════════════════════
+function fc(v) {
+  if(v===null||v===undefined||v==='') return '-';
+  return Number(v).toLocaleString('ko-KR')+'원';
+}
+function fn(v) {
+  if(v===null||v===undefined||v==='') return '-';
+  return Number(v).toLocaleString('ko-KR');
+}
+
+// ══════════════════════════════════════
+// XSS 방어: escapeHtml
+// innerHTML에 사용자 입력값이나 시트 데이터를 넣기 전 반드시 통과
+// ══════════════════════════════════════
+function esc(str) {
+  if(str===null||str===undefined) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+// ══════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════
+function render(d) {
+  renderC01(d.storeStatus);
+  renderC02(d.salesGoal);
+  renderC03(d.productFlow);
+  renderC04(d.issues);
+  renderC05(d.noReasons);
+  renderC06(d.feedback);
+  renderC07(d.safeSize);
+  renderC08(d.snsEvent);
+  renderC09(d.todayNotes, d.todayActions);
+}
+
+// ── C01 ──
+function renderC01(d) {
+  const el = document.getElementById('c01-text');
+  const meta = document.getElementById('c01-meta');
+  if(!d||!d.text) {
+    el.textContent = '오늘의 매장 상태가 입력되지 않았습니다. 점장설정에서 입력해 주세요.';
+    el.classList.add('empty-text');
+    meta.textContent = '';
+  } else {
+    el.textContent = d.text;
+    el.classList.remove('empty-text');
+    meta.textContent = d.updatedAt ? `${d.author||'점장'} · ${d.updatedAt} 업데이트` : '';
+  }
+}
+
+// ── C02 ──
+function renderC02(d) {
+  document.getElementById('c02-period').textContent = period==='today' ? '오늘 기준' : '이번 주 기준';
+  const ST = {
+    '양호':{cls:'badge-good',barCls:'bar-good',color:'var(--good)'},
+    '주의':{cls:'badge-warn',barCls:'bar-warn',color:'var(--warn)'},
+    '위험':{cls:'badge-danger',barCls:'bar-danger',color:'var(--danger)'},
+    'unknown':{cls:'badge-muted',barCls:'bar-muted',color:'var(--muted)'}
+  };
+  const rows=[{label:'오늘',d:d.daily},{label:'이번 주',d:d.weekly},{label:'이번 달',d:d.monthly}];
+  const html = rows.map(({label,d:rd})=>{
+    const st=ST[rd.status]||ST['unknown'];
+    const barW=rd.rate!==null?Math.min(rd.rate,100):0;
+    const remain=rd.goal>0?Math.max(rd.goal-rd.actual,0):null;
+    return `<div class="goal-row">
+      <div class="goal-top">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="goal-period">${esc(label)}</span>
+          <span class="badge ${st.cls}">${rd.status!=='unknown'?esc(rd.status):'-'}</span>
+        </div>
+        <div class="goal-numbers">
+          <span class="goal-actual" style="color:${st.color}">${fc(rd.actual)}</span>
+          <span class="goal-target">/ ${fc(rd.goal)}</span>
+        </div>
+      </div>
+      <div class="goal-bar-wrap"><div class="goal-bar ${st.barCls}" style="width:${barW}%"></div></div>
+      <div class="goal-bottom">
+        <span class="goal-rate" style="color:${st.color}">${rd.rate!==null?rd.rate+'%':'-'} 달성</span>
+        ${remain!==null?`<span class="goal-remain">잔여 ${fc(remain)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  const comment = d.managerComment
+    ? `<div class="goal-comment">💬 ${esc(d.managerComment)}</div>` : '';
+  document.getElementById('c02-body').innerHTML = html+comment;
+}
+
+// ── C03 ──
+function renderC03(d) {
+  const pd=period==='today'?d.today:d.week;
+  const pLabel=period==='today'?'오늘':'이번 주';
+  document.getElementById('c03-period-qty').textContent=pLabel+' · 수량 Top 5';
+  document.getElementById('c03-period-sales').textContent=pLabel+' · 매출 Top 5';
+  const mkList=(items,valFn)=>{
+    if(!items||items.length===0) return `<div class="empty">판매 데이터가 없습니다.</div>`;
+    return items.map((item,i)=>`
+      <div class="product-item">
+        <div class="product-rank ${i===0?'rank-1':''}">${i+1}</div>
+        <div class="product-name" title="${esc(item.name)}">${esc(item.name)}</div>
+        <div class="product-value">${valFn(item)}</div>
+      </div>`).join('');
+  };
+  document.getElementById('c03-qty').innerHTML=mkList(pd.topByQty,i=>fn(i.qty)+'개');
+  document.getElementById('c03-sales').innerHTML=mkList(pd.topBySales,i=>fc(i.amount));
+}
+
+// ── C04 ──
+// 뱃지는 pendingTotal(전체 미처리 건수) 기준, 홈에는 최대 5건만 표시
+function renderC04(d) {
+  const badge=document.getElementById('c04-badge');
+  const body=document.getElementById('c04-body');
+  if(!d||d.pendingTotal===0) {
+    badge.innerHTML='';
+    body.innerHTML=`<div class="empty">현재 미처리 이슈가 없습니다. ✓</div>`;
+    return;
+  }
+  // 뱃지는 전체 미처리 건수(pendingTotal) 기준
+  badge.innerHTML=`<span class="badge badge-danger">미처리 ${d.pendingTotal}건</span>`;
+  // 홈에는 최대 5건만 노출
+  const show=(d.pending||[]).slice(0,5);
+  const more=d.pendingTotal>5?`<div class="issue-more">외 ${d.pendingTotal-5}건 더 있음 (제품이슈 탭에서 확인)</div>`:'';
+  body.innerHTML=show.map(issue=>{
+    const typeKey=esc(issue.type||'');
+    const typeLabel=esc(issue.typeLabel||ISSUE_TYPE_MAP[issue.type]||issue.type||'');
+    return `<div class="issue-item">
+      <div class="issue-header">
+        <span class="issue-type type-${typeKey}">${typeLabel}</span>
+        <span class="issue-status-badge s-${esc(issue.status)}">${esc(issue.status)}</span>
+      </div>
+      <div class="issue-product-name">${esc(issue.brand)} ${esc(issue.product)}${issue.size?' '+esc(issue.size)+'mm':''}</div>
+      <div class="issue-desc">${esc(issue.content)}</div>
+      <div class="issue-meta">${esc(issue.date)} · ${esc(issue.author)}</div>
+    </div>`;
+  }).join('')+more;
+}
+
+// ── C05 ──
+function renderC05(d) {
+  const pd=period==='today'?d.today:d.week;
+  const pLabel=period==='today'?'오늘':'이번 주';
+  document.getElementById('c05-period').textContent=pLabel+' 기준';
+  document.getElementById('c05-badge').textContent=`총 ${pd.total}건`;
+  const body=document.getElementById('c05-body');
+  if(!pd.top3||pd.top3.length===0) {
+    body.innerHTML=`<div class="empty">${pLabel} 미구매 기록이 없습니다.</div>`;
+    return;
+  }
+  const maxC=pd.top3[0].count;
+  const comment=d.managerComment?`<div class="noreason-comment">💬 ${esc(d.managerComment)}</div>`:'';
+  body.innerHTML=pd.top3.map((item,i)=>{
+    const rate=pd.total>0?Math.round(item.count/pd.total*100):0;
+    const barW=maxC>0?Math.round(item.count/maxC*100):0;
+    return `<div class="noreason-item">
+      <div class="noreason-top">
+        <div class="noreason-left">
+          <div class="noreason-num ${i===0?'n1':''}">${i+1}</div>
+          <div class="noreason-name">${esc(item.reason)}</div>
+        </div>
+        <div class="noreason-count">${item.count}건 · ${rate}%</div>
+      </div>
+      <div class="noreason-bar-wrap"><div class="noreason-bar" style="width:${barW}%"></div></div>
+    </div>`;
+  }).join('')+comment;
+}
+
+// ── C06 ──
+function renderC06(d) {
+  const wd=d.week;
+  const body=document.getElementById('c06-body');
+  if(!wd.count||wd.count===0) {
+    body.innerHTML=`<div class="empty">이번 주 피드백 응답이 없습니다.</div>`;
+    return;
+  }
+  const rows=[
+    {label:'제품 만족도',score:wd.satisfaction},
+    {label:'추천 적합도',score:wd.recommendation},
+    {label:'재방문 의향',score:wd.revisit}
+  ];
+  body.innerHTML=rows.map(r=>`
+    <div class="feedback-item">
+      <span class="feedback-label">${esc(r.label)}</span>
+      <div class="stars-wrap">${r.score!==null?mkStars(r.score):'-'}</div>
+      <span class="feedback-score">${r.score!==null?r.score.toFixed(1):'-'}</span>
+    </div>`).join('')+
+    `<div class="feedback-count">이번 주 ${wd.count}건 응답 기준</div>`;
+}
+function mkStars(score) {
+  const full=Math.floor(score);
+  const half=(score-full)>=0.5?1:0;
+  const empty=5-full-half;
+  return '<span class="star-dot star-filled">★</span>'.repeat(full)+
+    (half?'<span class="star-dot star-filled" style="opacity:0.45">★</span>':'')+
+    '<span class="star-dot star-empty">★</span>'.repeat(empty);
+}
+
+// ── C07 ──
+function renderEventCard(elId, d) {
+  const rc=d.rate!==null?(d.rate>=50?'rate-good':d.rate>=30?'rate-warn':'rate-danger'):'rate-warn';
+  document.getElementById(elId).innerHTML=`
+    <div class="event-grid">
+      <div class="event-stat"><div class="event-stat-num">${fn(d.participants)}<span class="event-stat-unit">명</span></div><div class="event-stat-label">오늘 참여</div></div>
+      <div class="event-stat"><div class="event-stat-num">${fn(d.conversions)}<span class="event-stat-unit">명</span></div><div class="event-stat-label">구매 전환</div></div>
+      <div class="event-stat"><div class="event-stat-num ${rc}">${d.rate!==null?d.rate+'%':'-'}</div><div class="event-stat-label">전환율</div></div>
+    </div>`;
+}
+function renderC07(d){renderEventCard('c07-body',d.today)}
+function renderC08(d){renderEventCard('c08-body',d.today)}
+
+// ── C09 ──
+function renderC09(notes, actions) {
+  const notesEl=document.getElementById('c09-notes-section');
+  const actEl=document.getElementById('c09-actions');
+  const lvMap={'높음':'nl-high','보통':'nl-mid','낮음':'nl-low'};
+
+  if(notes&&notes.length>0) {
+    notesEl.innerHTML=`
+      <div class="c09-label" style="margin-bottom:12px">오늘의 특이사항</div>
+      <div style="margin-bottom:24px">
+        ${notes.map(n=>`
+          <div class="note-item">
+            <span class="note-level ${lvMap[n.level]||'nl-low'}">${esc(n.level)}</span>
+            <span class="note-text">${esc(n.content)}${n.followUp?' <span style="font-size:11px;background:rgba(220,38,38,0.2);color:#FCA5A5;padding:2px 6px;border-radius:4px;margin-left:6px">후속조치 필요</span>':''}</span>
+          </div>`).join('')}
+      </div>`;
+  } else {
+    notesEl.innerHTML=`
+      <div class="c09-label" style="margin-bottom:12px">오늘의 특이사항</div>
+      <div style="color:rgba(255,255,255,0.3);font-size:14px;margin-bottom:24px">오늘 특이사항이 없습니다.</div>`;
+  }
+
+  const valid=(actions||[]).filter(a=>a&&a.trim());
+  actEl.innerHTML=valid.length===0
+    ? `<div class="c09-action-empty">오늘의 액션이 입력되지 않았습니다.<br>점장설정에서 입력해 주세요.</div>`
+    : `<ul class="action-list">${valid.map(a=>`
+        <li class="action-item">
+          <div class="action-check">✓</div>
+          <span class="action-text">${esc(a)}</span>
+        </li>`).join('')}</ul>`;
+}
+
+// ══════════════════════════════════════
+// FORM
+// ══════════════════════════════════════
+function sel(btn, group) {
+  btn.closest('.btn-group').querySelectorAll('.btn-opt').forEach(b=>b.classList.toggle('sel',b===btn));
+}
+
+function getSelected(group) {
+  const b=document.querySelector(`.btn-opt.sel[onclick*="${group}"]`);
+  return b ? b.textContent.trim() : null;
+}
+
+function getSelectedKey(group) {
+  const b=document.querySelector(`.btn-opt.sel[onclick*="${group}"]`);
+  return b ? (b.dataset.key||b.textContent.trim()) : null;
+}
+
+function v(id){return (document.getElementById(id)||{}).value||''}
+
+// ══════════════════════════════════════
+// SUBMIT — 실제 saveData() 호출
+// 성공 시에만 toast + showScreen + render
+// 실패 시 에러 toast
+// ══════════════════════════════════════
+function submitForm(type) {
+  const payload = buildPayload(type);
+  if(!payload) return;
+
+  const btnId = {issue:'btn-issue',noreason:'btn-noreason',note:'btn-note',safesize:'btn-safesize',sns:'btn-sns',setting:'btn-setting'}[type];
+  const btn = document.getElementById(btnId);
+  if(btn){btn.disabled=true;btn.textContent='저장 중...';}
+
+  saveData(type, payload,
+    function onSuccess() {
+      if(btn){btn.disabled=false;btn.textContent='저장하기';}
+      showToast('저장되었습니다.');
+      resetForm(type);
+      showScreen('home');
+      loadDashboardData();
+    },
+    function onError(err) {
+      if(btn){btn.disabled=false;btn.textContent='저장하기';}
+      showToast('저장에 실패했습니다: '+(err||'알 수 없는 오류'), true);
+    }
+  );
+}
+
+function buildPayload(type) {
+  if(type==='issue') {
+    const issueType=getSelectedKey('issueType');
+    const issueTypeLabel=getSelected('issueType');
+    const brand=v('i-brand').trim();
+    const product=v('i-product').trim();
+    const content=v('i-content').trim();
+    if(!issueType){showToast('이슈 유형을 선택해주세요.',true);return null}
+    if(!brand||!product){showToast('브랜드와 상품명을 입력해주세요.',true);return null}
+    if(!content){showToast('이슈 내용을 입력해주세요.',true);return null}
+    return{type:'issue',issueType,issueTypeLabel,brand,product,content,color:v('i-color'),size:v('i-size'),erpStock:v('i-erp'),realStock:v('i-real'),author:v('i-author')};
+  }
+  if(type==='noreason') {
+    const cat=getSelected('nr-cat');
+    const reason=getSelected('nr-reason');
+    if(!cat){showToast('카테고리를 선택해주세요.',true);return null}
+    if(!reason){showToast('미구매 사유를 선택해주세요.',true);return null}
+    return{type:'noreason',category:cat,reason,brand:v('nr-brand'),product:v('nr-product'),size:v('nr-size'),memo:v('nr-memo'),author:v('nr-author')};
+  }
+  if(type==='note') {
+    const content=v('note-content').trim();
+    if(!content){showToast('특이사항 내용을 입력해주세요.',true);return null}
+    return{type:'note',content,level:getSelected('note-level')||'보통',followUp:getSelected('note-followup')==='후속 조치 필요'?'Y':'N',author:v('note-author')};
+  }
+  if(type==='safesize') {
+    const proc=getSelected('ss-proc');
+    const buy=getSelected('ss-buy');
+    if(!proc){showToast('진행 여부를 선택해주세요.',true);return null}
+    if(!buy){showToast('구매 여부를 선택해주세요.',true);return null}
+    return{type:'safesize',proceeded:proc.startsWith('Y')?'Y':'N',purchased:buy.startsWith('Y')?'Y':'N',runningPurpose:getSelected('ss-purpose')||'',purchasedProduct:v('ss-product'),memo:v('ss-memo'),author:v('ss-author')};
+  }
+  if(type==='sns') {
+    const part=getSelected('sns-part');
+    const buy=getSelected('sns-buy');
+    if(!part){showToast('참여 여부를 선택해주세요.',true);return null}
+    if(!buy){showToast('구매 여부를 선택해주세요.',true);return null}
+    return{type:'sns',participated:part.startsWith('Y')?'Y':'N',purchased:buy.startsWith('Y')?'Y':'N',channel:getSelected('sns-ch')||'',benefitGiven:getSelected('sns-benefit')||'N',memo:v('sns-memo'),author:v('sns-author')};
+  }
+  if(type==='setting') {
+    return{type:'setting',storeStatus:v('set-status'),action1:v('set-a1'),action2:v('set-a2'),action3:v('set-a3'),action4:v('set-a4'),action5:v('set-a5'),commentSales:v('set-c-sales'),commentProduct:v('set-c-product'),commentNoReason:v('set-c-noreason')};
+  }
+  return null;
+}
+
+// ══════════════════════════════════════
+// saveData — GAS/브라우저 환경 분기
+// ══════════════════════════════════════
+function saveData(type, payload, onSuccess, onError) {
+  if (IS_GAS) {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if(result&&result.success) {
+          onSuccess();
+        } else {
+          onError(result&&result.error ? result.error : '저장 실패');
+        }
+      })
+      .withFailureHandler(function(err) {
+        onError(err&&err.message ? err.message : String(err));
+      })
+      .doPost_proxy(payload); // Apps Script에서 doPost_proxy(payload) 함수를 별도 구현
+  } else {
+    // 브라우저 환경: 콘솔에만 로그하고 성공으로 처리
+    console.log('[saveData stub]', type, payload);
+    setTimeout(onSuccess, 300);
+  }
+}
+
+// ══════════════════════════════════════
+// RESET FORM
+// 특이사항 폼은 '보통', '불필요' 기본값 복원
+// ══════════════════════════════════════
+function resetForm(type) {
+  const screenMap={issue:'productIssue',noreason:'noPurchase',note:'specialNote',safesize:'safeSize',sns:'sns',setting:'manager'};
+  const sc=document.getElementById('screen-'+screenMap[type]);
+  if(!sc) return;
+  sc.querySelectorAll('input,textarea').forEach(el=>el.value='');
+  sc.querySelectorAll('.btn-opt').forEach(b=>b.classList.remove('sel'));
+
+  // 특이사항 폼 기본값 복원
+  if(type==='note') {
+    const lvGroup=document.getElementById('note-level-group');
+    const fuGroup=document.getElementById('note-followup-group');
+    if(lvGroup) lvGroup.querySelectorAll('.btn-opt').forEach(b=>{b.classList.toggle('sel',b.textContent.trim()==='보통')});
+    if(fuGroup) fuGroup.querySelectorAll('.btn-opt').forEach(b=>{b.classList.toggle('sel',b.textContent.trim()==='불필요')});
+  }
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+function showToast(msg, isError) {
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.classList.toggle('error',!!isError);
+  el.classList.add('show');
+  setTimeout(()=>{el.classList.remove('show');el.classList.remove('error');},2500);
+}
+</script>
+</body>
+</html>
