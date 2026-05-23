@@ -1,3 +1,10 @@
+/**
+ * RACEMENT Garosu Dashboard
+ * File: backend/dashboard_final.gs
+ * Version: v0.4
+ * Purpose: Google Apps Script backend
+ * Last Updated: 2026-05-23
+ */
 // ============================================================
 // 레이스먼트 가로수길 대시보드 — Apps Script
 // STEP 1: Sheets 세팅 + ERP 데이터 파이프라인
@@ -22,6 +29,7 @@ const SHEET_NAMES = {
 const COLUMN_MAP = {
   '거래명세서일':   '날짜',
   '거래명세서번호': '영수증번호',
+  '수주구분':       '수주구분',
   '담당자':        '직원명',
   '브랜드':        '브랜드',
   '카테고리2':     '카테고리',
@@ -97,6 +105,8 @@ function _createSheetIfNotExists(ss, name) {
 function _setupCleanSheet(ss) {
   _createSheetIfNotExists(ss, SHEET_NAMES.CLEAN);
   const sh = ss.getSheetByName(SHEET_NAMES.CLEAN);
+  // 전체 일반 텍스트 서식 고정
+  sh.getRange(1, 1, Math.max(sh.getMaxRows(), 1000), CLEAN_HEADERS.length).setNumberFormat('@');
   if (sh.getLastRow() === 0) {
     sh.getRange(1, 1, 1, CLEAN_HEADERS.length).setValues([CLEAN_HEADERS]);
     sh.getRange(1, 1, 1, CLEAN_HEADERS.length).setFontWeight('bold');
@@ -117,7 +127,7 @@ function _setupIssueSheet(ss) {
   _createSheetIfNotExists(ss, SHEET_NAMES.ISSUE);
   const sh = ss.getSheetByName(SHEET_NAMES.ISSUE);
   if (sh.getLastRow() === 0) {
-    const headers = ['기록일', '작성자', '이슈유형', '브랜드', '상품명', '색상', '사이즈', 'ERP재고', '실재고', '이슈내용', '처리상태', '처리일', '점장메모'];
+    const headers = ['기록일', '작성자', '이슈유형', '브랜드', '상품명', '색상', '사이즈', 'ERP재고', '실재고', '이슈내용', '처리상태', '처리일', '처리자', '점장메모'];
     sh.getRange(1, 1, 1, headers.length).setValues([headers]);
     sh.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   }
@@ -137,7 +147,8 @@ function _setupSafeSheet(ss) {
   _createSheetIfNotExists(ss, SHEET_NAMES.SAFE);
   const sh = ss.getSheetByName(SHEET_NAMES.SAFE);
   if (sh.getLastRow() === 0) {
-    const headers = ['기록일', '작성자', '세이프사이즈진행', '러닝목적', '구매여부', '구매상품', '고객반응메모'];
+    // 상품별 행 분리 구조 — 한 세션에 상품 여러 개면 여러 행 저장
+    const headers = ['기록일', '작성자', '세이프사이즈진행', '러닝목적', '구매여부', '상품명', '할인율', '판매금액', '고객반응메모', '세션ID'];
     sh.getRange(1, 1, 1, headers.length).setValues([headers]);
     sh.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   }
@@ -147,7 +158,8 @@ function _setupSnsSheet(ss) {
   _createSheetIfNotExists(ss, SHEET_NAMES.SNS);
   const sh = ss.getSheetByName(SHEET_NAMES.SNS);
   if (sh.getLastRow() === 0) {
-    const headers = ['기록일', '작성자', 'SNS인증참여', '인증채널', '구매여부', '혜택제공여부', '고객반응메모'];
+    // 상품별 행 분리 구조
+    const headers = ['기록일', '작성자', 'SNS인증참여', '인증채널', '구매여부', '상품명', '할인율', '판매금액', '혜택제공여부', '고객반응메모', '세션ID'];
     sh.getRange(1, 1, 1, headers.length).setValues([headers]);
     sh.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   }
@@ -215,6 +227,19 @@ function processRawData() {
     return;
   }
 
+  // ── 서식 자동 처리: RAW + CLEAN 전체를 일반 텍스트(@)로 강제 설정 ──
+  // 실행 전에 자동으로 처리하므로 수동 서식 변경 불필요
+  rawSh.getDataRange().setNumberFormat('@');
+  cleanSh.getDataRange().setNumberFormat('@');
+  // CLEAN 탭 빈 영역까지 커버 (데이터 없을 때도 미리 설정)
+  cleanSh.getRange(1, 1, Math.max(cleanSh.getMaxRows(), 1000), CLEAN_HEADERS.length).setNumberFormat('@');
+  Logger.log('✅ RAW + CLEAN 탭 서식 일반 텍스트 자동 설정 완료');
+
+  if (!rawSh) {
+    Logger.log('❌ 판매데이터_RAW 탭을 찾을 수 없습니다.');
+    return;
+  }
+
   const rawData = rawSh.getDataRange().getValues();
   if (rawData.length < 5) {
     Logger.log('❌ RAW 탭에 데이터가 없거나 너무 적습니다. ERP 엑셀을 붙여넣었는지 확인하세요.');
@@ -244,7 +269,7 @@ function processRawData() {
   });
 
   // 필수 컬럼 누락 체크
-  const required = ['거래명세서일', '수량', '판매금액', '창고'];
+  const required = ['거래명세서일', '수량', '판매금액', '창고', '수주구분'];
   const missing = required.filter(col => !(col in erpColIdx));
   if (missing.length > 0) {
     Logger.log('❌ 필수 컬럼 누락: ' + missing.join(', ') + ' — ERP 파일 형식을 확인하세요.');
@@ -288,6 +313,13 @@ function processRawData() {
       continue;
     }
 
+    // 수주구분 필터: 매장만 (온라인, F/O 제외)
+    const orderType = String(row[erpColIdx['수주구분']] || '').trim();
+    if (orderType !== '매장') {
+      skippedStore++;
+      continue;
+    }
+
     // 중복 체크 (영수증번호+품번+사이즈)
     const receiptNo = String(row[erpColIdx['거래명세서번호']] || '');
     const partNo    = String(row[erpColIdx['품번']] || '');
@@ -303,25 +335,25 @@ function processRawData() {
     const dateStr = _formatDate(row[erpColIdx['거래명세서일']]);
 
     // 수량 → 거래유형
-    const qty = Number(row[erpColIdx['수량']] || 0);
+    const qty = _safeNum(row[erpColIdx['수량']]);
     const txType = qty < 0 ? '반품' : '정상판매';
 
     // CLEAN 행 구성
     const cleanRow = [
-      dateStr,                                            // 날짜
-      receiptNo,                                          // 영수증번호
-      String(row[erpColIdx['담당자']]   || '').trim(),   // 직원명
-      String(row[erpColIdx['브랜드']]   || '').trim(),   // 브랜드
-      String(row[erpColIdx['카테고리2']]|| '').trim(),   // 카테고리
-      String(row[erpColIdx['실루엣']]   || '').trim(),   // 실루엣
-      String(row[erpColIdx['성별']]     || '').trim(),   // 성별
-      String(row[erpColIdx['품명']]     || '').trim(),   // 상품명
-      partNo,                                             // 품번
-      size,                                               // 사이즈
-      qty,                                                // 수량
-      Number(row[erpColIdx['판매금액']] || 0),           // 매출액 (부가세 제외)
-      store,                                              // 창고
-      txType,                                             // 거래유형
+      dateStr,                                                      // 날짜
+      receiptNo,                                                    // 영수증번호
+      String(row[erpColIdx['담당자']]   || '').trim(),             // 직원명
+      String(row[erpColIdx['브랜드']]   || '').trim(),             // 브랜드
+      String(row[erpColIdx['카테고리2']]|| '').trim(),             // 카테고리
+      String(row[erpColIdx['실루엣']]   || '').trim(),             // 실루엣
+      String(row[erpColIdx['성별']]     || '').trim(),             // 성별
+      String(row[erpColIdx['품명']]     || '').trim(),             // 상품명
+      partNo,                                                       // 품번
+      size,                                                         // 사이즈
+      qty,                                                          // 수량
+      _safeNum(row[erpColIdx['판매금액']]),                        // 매출액 (부가세 제외)
+      store,                                                        // 창고
+      txType,                                                       // 거래유형
     ];
     newRows.push(cleanRow);
   }
@@ -347,11 +379,24 @@ function _formatDate(val) {
     return `${y}-${m}-${d}`;
   }
   const str = String(val).trim();
-  // 이미 YYYY-MM-DD 형태
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  // YYYYMMDD 형태
   if (/^\d{8}$/.test(str)) return `${str.slice(0,4)}-${str.slice(4,6)}-${str.slice(6,8)}`;
   return str;
+}
+
+/**
+ * 어떤 값이든 안전하게 숫자로 변환
+ * #NUM!, #VALUE!, 오류값, 빈값, 쉼표 포함 문자열 모두 처리
+ */
+function _safeNum(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') return isFinite(val) ? val : 0;
+  // Sheets 오류값 객체 처리 (#NUM!, #VALUE! 등)
+  if (typeof val === 'object') return 0;
+  // 문자열에서 숫자만 추출 (쉼표, 공백, 원화기호 제거)
+  const cleaned = String(val).replace(/[,\s₩원]/g, '').trim();
+  const parsed = parseFloat(cleaned);
+  return isFinite(parsed) ? parsed : 0;
 }
 
 /**
@@ -448,10 +493,10 @@ function getCleanRows(startDate, endDate, txType) {
   CLEAN_HEADERS.forEach(h => { ci[h] = headers.indexOf(h); });
 
   return data.slice(1).filter(row => {
-    const d = row[ci['날짜']];
+    const d = String(row[ci['날짜']] || '').trim();
     if (!d) return false;
     if (d < startDate || d > endDate) return false;
-    if (txType && row[ci['거래유형']] !== txType) return false;
+    if (txType && String(row[ci['거래유형']] || '').trim() !== txType) return false;
     return true;
   }).map(row => {
     const obj = {};
@@ -514,30 +559,37 @@ function getDashboardData(filterType) {
     // C08 SNS 인증
     snsEvent: _getSnsEvent(today),
 
-    // C09 특이사항 + 오늘의 액션
-    notes:   _getNotes(today),
-    actions: _getActions(today),
+    // C09 특이사항 + 오늘의 액션 — 프론트는 todayNotes/todayActions로 기대
+    todayNotes:  _getNotes(today),
+    todayActions: _getActions(today),
   };
 }
 
 // C01: 오늘의 매장 상태
 function _getStoreStatus(today) {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.SETTING);
-  if (!sh || sh.getLastRow() < 2) return { text: '' };
+  if (!sh || sh.getLastRow() < 2) return { text: '', updatedAt: '', author: '' };
 
   const data = sh.getDataRange().getValues();
   const headers = data[0];
-  const ciDate = headers.indexOf('날짜');
-  const ciText = headers.indexOf('매장상태문장');
+  const ciDate  = headers.indexOf('날짜');
+  const ciText  = headers.indexOf('매장상태문장');
+  const ciTime  = headers.indexOf('마지막수정시간');
 
-  // 오늘 날짜 행 우선, 없으면 가장 최근 행
   let found = null;
   for (let i = data.length - 1; i >= 1; i--) {
     const d = _formatDate(data[i][ciDate]);
     if (d === today) { found = data[i]; break; }
   }
   if (!found && data.length > 1) found = data[data.length - 1];
-  return { text: found ? String(found[ciText] || '') : '' };
+  if (!found) return { text: '', updatedAt: '', author: '' };
+
+  const updatedAt = found[ciTime] ? String(found[ciTime]).slice(0, 16) : '';
+  return {
+    text:      String(found[ciText] || ''),
+    updatedAt: updatedAt,
+    author:    '점장',
+  };
 }
 
 // C02: 목표 매출 현황
@@ -568,9 +620,15 @@ function _getSalesGoal(today, week, month, salesRows, returnRows, salesWeek, ret
 
   const sumSales = arr => arr.reduce((s, r) => s + Number(r['매출액'] || 0), 0);
 
-  const todaySales   = sumSales(salesRows)  - sumSales(returnRows);
-  const weeklySales  = sumSales(salesWeek)  - sumSales(returnWeek);
-  const monthlySales = sumSales(salesMonth) - sumSales(returnMonth);
+  // 반품 행의 매출액은 이미 음수로 저장되어 있으므로
+  // 정상판매 + 반품(음수)을 모두 합산하면 순매출이 됨
+  const allToday   = getCleanRows(today,       today,       null);
+  const allWeek    = getCleanRows(week.start,  week.end,    null);
+  const allMonth   = getCleanRows(month.start, month.end,   null);
+
+  const todaySales   = sumSales(allToday);
+  const weeklySales  = sumSales(allWeek);
+  const monthlySales = sumSales(allMonth);
 
   return {
     daily:   { goal: goals.daily,   actual: todaySales,   rate: _rate(todaySales, goals.daily),   status: _status(_rate(todaySales, goals.daily)) },
@@ -635,20 +693,25 @@ function _getIssues() {
   const ci = {};
   headers.forEach((h, i) => { ci[h] = i; });
 
-  const all = data.slice(1).filter(r => r[ci['기록일']]).map(r => {
+  const all = data.slice(1).filter(r => r[ci['기록일']]).map((r, i) => {
     const typeLabel = String(r[ci['이슈유형']] || '').trim();
     return {
-      date:      _formatDate(r[ci['기록일']]),
-      author:    r[ci['작성자']],
-      type:      ISSUE_TYPE_KEY_MAP[typeLabel] || typeLabel, // key로 변환, 없으면 원본
-      typeLabel: typeLabel,                                   // 한글 표시용
-      brand:     r[ci['브랜드']],
-      product:   r[ci['상품명']],
-      color:     r[ci['색상']],
-      size:      r[ci['사이즈']],
-      content:   r[ci['이슈내용']],
-      status:    r[ci['처리상태']],
-      memo:      r[ci['점장메모']],
+      rowIndex:   i + 2,
+      date:       _formatDate(r[ci['기록일']]),
+      author:     String(r[ci['작성자']]   || ''),
+      type:       ISSUE_TYPE_KEY_MAP[typeLabel] || typeLabel,
+      typeLabel:  typeLabel,
+      brand:      String(r[ci['브랜드']]   || ''),
+      product:    String(r[ci['상품명']]   || ''),
+      color:      String(r[ci['색상']]     || ''),
+      size:       String(r[ci['사이즈']]   || ''),
+      erpStock:   String(r[ci['ERP재고']]  || ''),
+      realStock:  String(r[ci['실재고']]   || ''),
+      content:    String(r[ci['이슈내용']] || ''),
+      status:     String(r[ci['처리상태']] || '미확인'),
+      resolvedAt: _formatDate(r[ci['처리일']]),
+      resolver:   String(r[ci['처리자']]   || ''),
+      managerMemo:String(r[ci['점장메모']] || ''),
     };
   });
 
@@ -705,7 +768,7 @@ function _getNoReasons(week) {
 // C06: 고객 피드백 평균
 function _getFeedback(week) {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.FEEDBACK);
-  if (!sh || sh.getLastRow() < 2) return { satisfaction: null, recommendation: null, revisit: null, count: 0 };
+  if (!sh || sh.getLastRow() < 2) return { week: { satisfaction: null, recommendation: null, revisit: null, count: 0 } };
 
   const data    = sh.getDataRange().getValues();
   const headers = data[0];
@@ -737,7 +800,7 @@ function _getFeedback(week) {
     return d >= week.start && d <= week.end;
   });
 
-  if (rows.length === 0) return { satisfaction: null, recommendation: null, revisit: null, count: 0 };
+  if (rows.length === 0) return { week: { satisfaction: null, recommendation: null, revisit: null, count: 0 } };
 
   const avg = (arr, ci) => {
     const vals = arr.map(r => toScore(r[ci])).filter(v => v !== null);
@@ -745,47 +808,75 @@ function _getFeedback(week) {
   };
 
   return {
-    satisfaction:   avg(rows, ciSat),
-    recommendation: avg(rows, ciRec),
-    revisit:        avg(rows, ciRev),
-    count:          rows.length,
+    week: {
+      satisfaction:   avg(rows, ciSat),
+      recommendation: avg(rows, ciRec),
+      revisit:        avg(rows, ciRev),
+      count:          rows.length,
+    }
   };
 }
 
 // C07: 세이프사이즈 성과
 function _getSafeSize(today) {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.SAFE);
-  if (!sh || sh.getLastRow() < 2) return { participants: 0, conversions: 0, rate: null };
+  if (!sh || sh.getLastRow() < 2) return { today: { participants: 0, conversions: 0, rate: null } };
 
   const data    = sh.getDataRange().getValues();
   const headers = data[0];
   const ci = {};
   headers.forEach((h, i) => { ci[h] = i; });
 
-  const todayRows    = data.slice(1).filter(r => _formatDate(r[ci['기록일']]) === today);
-  const participants = todayRows.filter(r => String(r[ci['세이프사이즈진행']]).toUpperCase() === 'Y').length;
-  const conversions  = todayRows.filter(r => String(r[ci['세이프사이즈진행']]).toUpperCase() === 'Y' && String(r[ci['구매여부']]).toUpperCase() === 'Y').length;
+  // 세션ID 기준으로 중복 제거 (상품 여러 개여도 한 세션으로 카운트)
+  const sessionMap = {};
+  data.slice(1).forEach(r => {
+    if (_formatDate(r[ci['기록일']]) !== today) return;
+    const sessionId = String(r[ci['세션ID']] || '');
+    if (!sessionMap[sessionId]) {
+      sessionMap[sessionId] = {
+        proceeded: String(r[ci['세이프사이즈진행']] || '').toUpperCase(),
+        purchased: String(r[ci['구매여부']] || '').toUpperCase(),
+      };
+    }
+  });
+
+  const sessions     = Object.values(sessionMap);
+  const participants = sessions.filter(s => s.proceeded === 'Y').length;
+  const conversions  = sessions.filter(s => s.proceeded === 'Y' && s.purchased === 'Y').length;
   const rate = participants > 0 ? Math.round((conversions / participants) * 100) : null;
 
-  return { participants, conversions, rate };
+  return { today: { participants, conversions, rate } };
 }
 
 // C08: SNS 인증 성과
 function _getSnsEvent(today) {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.SNS);
-  if (!sh || sh.getLastRow() < 2) return { participants: 0, conversions: 0, rate: null };
+  if (!sh || sh.getLastRow() < 2) return { today: { participants: 0, conversions: 0, rate: null } };
 
   const data    = sh.getDataRange().getValues();
   const headers = data[0];
   const ci = {};
   headers.forEach((h, i) => { ci[h] = i; });
 
-  const todayRows    = data.slice(1).filter(r => _formatDate(r[ci['기록일']]) === today);
-  const participants = todayRows.filter(r => String(r[ci['SNS인증참여']]).toUpperCase() === 'Y').length;
-  const conversions  = todayRows.filter(r => String(r[ci['SNS인증참여']]).toUpperCase() === 'Y' && String(r[ci['구매여부']]).toUpperCase() === 'Y').length;
+  // 세션ID 기준으로 중복 제거
+  const sessionMap = {};
+  data.slice(1).forEach(r => {
+    if (_formatDate(r[ci['기록일']]) !== today) return;
+    const sessionId = String(r[ci['세션ID']] || '');
+    if (!sessionMap[sessionId]) {
+      sessionMap[sessionId] = {
+        participated: String(r[ci['SNS인증참여']] || '').toUpperCase(),
+        purchased:    String(r[ci['구매여부']]    || '').toUpperCase(),
+      };
+    }
+  });
+
+  const sessions     = Object.values(sessionMap);
+  const participants = sessions.filter(s => s.participated === 'Y').length;
+  const conversions  = sessions.filter(s => s.participated === 'Y' && s.purchased === 'Y').length;
   const rate = participants > 0 ? Math.round((conversions / participants) * 100) : null;
 
-  return { participants, conversions, rate };
+  return { today: { participants, conversions, rate } };
 }
 
 // C09: 오늘의 특이사항
@@ -800,11 +891,14 @@ function _getNotes(today) {
 
   return data.slice(1)
     .filter(r => _formatDate(r[ci['기록일']]) === today)
-    .map(r => ({
-      level:    r[ci['중요도']],
-      content:  r[ci['내용']],
-      followUp: r[ci['후속조치필요']],
-      memo:     r[ci['점장메모']],
+    .map((r, i) => ({
+      rowIndex:    i + 2,
+      date:        _formatDate(r[ci['기록일']]),
+      author:      String(r[ci['작성자']]      || ''),
+      level:       String(r[ci['중요도']]      || '보통'),
+      content:     String(r[ci['내용']]        || ''),
+      followUp:    String(r[ci['후속조치필요']] || '').trim().toUpperCase() === 'Y',
+      managerMemo: String(r[ci['점장메모']]    || ''),
     }));
 }
 
@@ -831,7 +925,431 @@ function _getActions(today) {
 }
 
 
-// ── 5. 직원 입력 폼 저장 API ─────────────────────────────────
+// ── 4. 탭별 전체 데이터 API ──────────────────────────────────────
+
+/**
+ * 각 기능 탭 진입 시 호출
+ * tabType: 'issue' | 'noreason' | 'note' | 'safesize' | 'sns'
+ * filters: { period: 'today'|'week'|'all', status: '전체'|'미확인'|..., category: '전체'|... }
+ */
+function getTabData(tabType, filters) {
+  filters = filters || {};
+  const period   = filters.period   || 'all';
+  const today    = getTodayStr();
+  const week     = getThisWeekRange();
+
+  // 날짜 범위 계산
+  let startDate = null, endDate = null;
+  if (period === 'today') { startDate = today;      endDate = today; }
+  if (period === 'week')  { startDate = week.start; endDate = week.end; }
+
+  if (tabType === 'issue')    return _getTabIssue(startDate, endDate, filters);
+  if (tabType === 'noreason') return _getTabNoReason(startDate, endDate, filters);
+  if (tabType === 'note')     return _getTabNote(startDate, endDate, filters);
+  if (tabType === 'safesize') return _getTabSafeSize(startDate, endDate, filters);
+  if (tabType === 'sns')      return _getTabSns(startDate, endDate, filters);
+  return { error: '알 수 없는 tabType: ' + tabType };
+}
+
+// ── 제품이슈 탭 ─────────────────────────────────────────────────
+function _getTabIssue(startDate, endDate, filters) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.ISSUE);
+  if (!sh || sh.getLastRow() < 2) return { kpi: _issueEmptyKpi(), breakdown: [], list: [] };
+
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0];
+  const ci = {};
+  headers.forEach((h, idx) => { ci[h] = idx; });
+
+  const rows = data.slice(1).filter(r => r[ci['기록일']]).map((r, i) => {
+    const typeLabel = String(r[ci['이슈유형']] || '').trim();
+    return {
+      rowIndex:    i + 2,
+      date:        _formatDate(r[ci['기록일']]),
+      author:      String(r[ci['작성자']]   || ''),
+      type:        ISSUE_TYPE_KEY_MAP[typeLabel] || typeLabel,
+      typeLabel:   typeLabel,
+      brand:       String(r[ci['브랜드']]   || ''),
+      product:     String(r[ci['상품명']]   || ''),
+      color:       String(r[ci['색상']]     || ''),
+      size:        String(r[ci['사이즈']]   || ''),
+      erpStock:    String(r[ci['ERP재고']]  || ''),
+      realStock:   String(r[ci['실재고']]   || ''),
+      content:     String(r[ci['이슈내용']] || ''),
+      status:      String(r[ci['처리상태']] || '미확인'),
+      resolvedAt:  _formatDate(r[ci['처리일']]),
+      resolver:    String(r[ci['처리자']]   || ''),
+      managerMemo: String(r[ci['점장메모']] || ''),
+    };
+  });
+
+  // 날짜 필터
+  let filtered = rows;
+  if (startDate) filtered = filtered.filter(r => r.date >= startDate && r.date <= endDate);
+
+  // 상태 필터
+  const statusFilter = filters.status || '전체';
+  if (statusFilter !== '전체') filtered = filtered.filter(r => r.status === statusFilter);
+
+  // 최신순 정렬
+  filtered.sort((a, b) => {
+    if (b.date !== a.date) return b.date > a.date ? 1 : -1;
+    return b.rowIndex - a.rowIndex;
+  });
+
+  // KPI
+  const allRows = rows; // 필터 전 전체
+  const kpi = {
+    pending:    allRows.filter(r => r.status !== '처리완료').length,
+    inProgress: allRows.filter(r => r.status === '확인중').length,
+    thisWeek:   allRows.filter(r => r.date >= getThisWeekRange().start && r.date <= getThisWeekRange().end).length,
+  };
+
+  // 유형별 분석
+  const breakdown = {};
+  allRows.forEach(r => {
+    const k = r.typeLabel || r.type || '기타';
+    breakdown[k] = (breakdown[k] || 0) + 1;
+  });
+
+  return {
+    kpi,
+    breakdown: Object.entries(breakdown).map(([label, count]) => ({ label, count })),
+    list: filtered,
+    total: filtered.length,
+  };
+}
+function _issueEmptyKpi() { return { pending: 0, inProgress: 0, thisWeek: 0 }; }
+
+// ── 미구매 탭 ───────────────────────────────────────────────────
+function _getTabNoReason(startDate, endDate, filters) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.NOREASON);
+  if (!sh || sh.getLastRow() < 2) return { kpi: { today: 0, week: 0, topReason: '-' }, breakdown: [], list: [] };
+
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0];
+  const ci = {};
+  headers.forEach((h, idx) => { ci[h] = idx; });
+  const today = getTodayStr();
+  const week  = getThisWeekRange();
+
+  const rows = data.slice(1).filter(r => r[ci['기록일']]).map((r, i) => ({
+    rowIndex:  i + 2,
+    date:      _formatDate(r[ci['기록일']]),
+    author:    String(r[ci['작성자']]        || ''),
+    category:  String(r[ci['카테고리']]      || ''),
+    brand:     String(r[ci['브랜드']]        || ''),
+    product:   String(r[ci['상품명']]        || ''),
+    size:      String(r[ci['사이즈']]        || ''),
+    reasonCode:Number(r[ci['미구매사유코드']] || 0),
+    reason:    String(r[ci['미구매사유명']]   || ''),
+    memo:      String(r[ci['메모']]          || ''),
+  }));
+
+  // 날짜 필터
+  let filtered = rows;
+  if (startDate) filtered = filtered.filter(r => r.date >= startDate && r.date <= endDate);
+
+  // 카테고리 필터
+  const catFilter = filters.category || '전체';
+  if (catFilter !== '전체') filtered = filtered.filter(r => r.category === catFilter);
+
+  // 최신순 정렬
+  filtered.sort((a, b) => {
+    if (b.date !== a.date) return b.date > a.date ? 1 : -1;
+    return b.rowIndex - a.rowIndex;
+  });
+
+  // KPI
+  const todayRows = rows.filter(r => r.date === today);
+  const weekRows  = rows.filter(r => r.date >= week.start && r.date <= week.end);
+  const reasonMap = {};
+  weekRows.forEach(r => { reasonMap[r.reason] = (reasonMap[r.reason] || 0) + 1; });
+  const topReason = Object.entries(reasonMap).sort((a,b) => b[1]-a[1])[0]?.[0] || '-';
+
+  // 사유별 분석 (이번 주 기준)
+  const breakdown = Object.entries(reasonMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([reason, count]) => ({ reason, count, pct: weekRows.length > 0 ? Math.round(count/weekRows.length*100) : 0 }));
+
+  return {
+    kpi: { today: todayRows.length, week: weekRows.length, topReason },
+    breakdown,
+    list: filtered,
+    total: filtered.length,
+  };
+}
+
+// ── 특이사항 탭 ─────────────────────────────────────────────────
+function _getTabNote(startDate, endDate, filters) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.NOTE);
+  if (!sh || sh.getLastRow() < 2) return { kpi: { today: 0, followUp: 0, week: 0 }, breakdown: [], list: [] };
+
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0];
+  const ci = {};
+  headers.forEach((h, idx) => { ci[h] = idx; });
+  const today = getTodayStr();
+  const week  = getThisWeekRange();
+
+  const rows = data.slice(1).filter(r => r[ci['기록일']]).map((r, i) => ({
+    rowIndex:    i + 2,
+    date:        _formatDate(r[ci['기록일']]),
+    author:      String(r[ci['작성자']]      || ''),
+    level:       String(r[ci['중요도']]      || '보통'),
+    content:     String(r[ci['내용']]        || ''),
+    followUp:    String(r[ci['후속조치필요']] || '').trim().toUpperCase() === 'Y',
+    managerMemo: String(r[ci['점장메모']]    || ''),
+  }));
+
+  // 날짜 필터
+  let filtered = rows;
+  if (startDate) filtered = filtered.filter(r => r.date >= startDate && r.date <= endDate);
+
+  // 중요도 필터
+  const levelFilter = filters.level || '전체';
+  if (levelFilter !== '전체') filtered = filtered.filter(r => r.level === levelFilter);
+
+  // 후속조치 필터
+  if (filters.followUpOnly) filtered = filtered.filter(r => r.followUp);
+
+  // 최신순 정렬
+  filtered.sort((a, b) => {
+    if (b.date !== a.date) return b.date > a.date ? 1 : -1;
+    return b.rowIndex - a.rowIndex;
+  });
+
+  // KPI
+  const kpi = {
+    today:   rows.filter(r => r.date === today).length,
+    followUp: rows.filter(r => r.followUp).length,
+    week:    rows.filter(r => r.date >= week.start && r.date <= week.end).length,
+  };
+
+  // 중요도별 분석
+  const levelMap = { '높음': 0, '보통': 0, '낮음': 0 };
+  rows.forEach(r => { if (levelMap[r.level] !== undefined) levelMap[r.level]++; });
+  const breakdown = Object.entries(levelMap).map(([level, count]) => ({ level, count }));
+
+  return { kpi, breakdown, list: filtered, total: filtered.length };
+}
+
+// ── 세이프사이즈 탭 ─────────────────────────────────────────────
+function _getTabSafeSize(startDate, endDate, filters) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.SAFE);
+  if (!sh || sh.getLastRow() < 2) return { kpi: { todayCount: 0, todayRate: null, weekRate: null }, breakdown: [], list: [] };
+
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0];
+  const ci = {};
+  headers.forEach((h, idx) => { ci[h] = idx; });
+  const today = getTodayStr();
+  const week  = getThisWeekRange();
+
+  // 세션ID 기준으로 그룹화 — 상품 여러 개여도 한 세션으로
+  const sessionMap = {};
+  data.slice(1).forEach((r, i) => {
+    const d = _formatDate(r[ci['기록일']]);
+    if (!d) return;
+    const sid = String(r[ci['세션ID']] || `_row_${i+2}`);
+    if (!sessionMap[sid]) {
+      sessionMap[sid] = {
+        rowIndex:  i + 2,
+        sessionId: sid,
+        date:      d,
+        author:    String(r[ci['작성자']]            || ''),
+        proceeded: String(r[ci['세이프사이즈진행']]   || '').toUpperCase(),
+        purpose:   String(r[ci['러닝목적']]           || ''),
+        purchased: String(r[ci['구매여부']]           || '').toUpperCase(),
+        memo:      String(r[ci['고객반응메모']]        || ''),
+        products:  [],
+      };
+    }
+    // 상품 정보가 있으면 추가
+    const pname = String(r[ci['상품명']] || '').trim();
+    if (pname) {
+      sessionMap[sid].products.push({
+        name:     pname,
+        discount: String(r[ci['할인율']]   || ''),
+        price:    _safeNum(r[ci['판매금액']]),
+      });
+    }
+  });
+
+  const rows = Object.values(sessionMap);
+
+  // 날짜 필터
+  let filtered = rows;
+  if (startDate) filtered = filtered.filter(r => r.date >= startDate && r.date <= endDate);
+
+  // 구매여부 필터
+  const buyFilter = filters.purchased || '전체';
+  if (buyFilter === '구매O') filtered = filtered.filter(r => r.purchased === 'Y');
+  if (buyFilter === '구매X') filtered = filtered.filter(r => r.purchased !== 'Y');
+
+  // 최신순 정렬
+  filtered.sort((a, b) => {
+    if (b.date !== a.date) return b.date > a.date ? 1 : -1;
+    return b.rowIndex - a.rowIndex;
+  });
+
+  // KPI
+  const todayRows = rows.filter(r => r.date === today && r.proceeded === 'Y');
+  const weekRows  = rows.filter(r => r.date >= week.start && r.date <= week.end && r.proceeded === 'Y');
+  const todayConv = todayRows.filter(r => r.purchased === 'Y').length;
+  const weekConv  = weekRows.filter(r => r.purchased === 'Y').length;
+
+  // 러닝 목적별 분석
+  const purposeMap = {};
+  rows.forEach(r => {
+    if (r.proceeded === 'Y' && r.purpose) {
+      purposeMap[r.purpose] = (purposeMap[r.purpose] || 0) + 1;
+    }
+  });
+
+  // 구매 상품 Top3
+  const productMap = {};
+  rows.forEach(r => {
+    r.products.forEach(p => {
+      if (p.name) productMap[p.name] = (productMap[p.name] || 0) + 1;
+    });
+  });
+  const topProducts = Object.entries(productMap).sort((a,b) => b[1]-a[1]).slice(0,3).map(([name,count]) => ({ name, count }));
+
+  return {
+    kpi: {
+      todayCount: todayRows.length,
+      todayRate:  todayRows.length > 0 ? Math.round(todayConv/todayRows.length*100) : null,
+      weekRate:   weekRows.length  > 0 ? Math.round(weekConv/weekRows.length*100)  : null,
+    },
+    breakdown: {
+      purpose:     Object.entries(purposeMap).map(([label, count]) => ({ label, count })),
+      topProducts,
+    },
+    list: filtered,
+    total: filtered.length,
+  };
+}
+
+// ── SNS 인증 탭 ─────────────────────────────────────────────────
+function _getTabSns(startDate, endDate, filters) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.SNS);
+  if (!sh || sh.getLastRow() < 2) return { kpi: { todayCount: 0, todayRate: null, weekRate: null }, breakdown: [], list: [] };
+
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0];
+  const ci = {};
+  headers.forEach((h, idx) => { ci[h] = idx; });
+  const today = getTodayStr();
+  const week  = getThisWeekRange();
+
+  // 세션ID 기준 그룹화
+  const sessionMap = {};
+  data.slice(1).forEach((r, i) => {
+    const d = _formatDate(r[ci['기록일']]);
+    if (!d) return;
+    const sid = String(r[ci['세션ID']] || `_row_${i+2}`);
+    if (!sessionMap[sid]) {
+      sessionMap[sid] = {
+        rowIndex:    i + 2,
+        sessionId:   sid,
+        date:        d,
+        author:      String(r[ci['작성자']]      || ''),
+        participated:String(r[ci['SNS인증참여']] || '').toUpperCase(),
+        channel:     String(r[ci['인증채널']]    || ''),
+        purchased:   String(r[ci['구매여부']]    || '').toUpperCase(),
+        benefit:     String(r[ci['혜택제공여부']] || '').toUpperCase(),
+        memo:        String(r[ci['고객반응메모']] || ''),
+        products:    [],
+      };
+    }
+    const pname = String(r[ci['상품명']] || '').trim();
+    if (pname) {
+      sessionMap[sid].products.push({
+        name:     pname,
+        discount: String(r[ci['할인율']]   || ''),
+        price:    _safeNum(r[ci['판매금액']]),
+      });
+    }
+  });
+
+  const rows = Object.values(sessionMap);
+
+  // 날짜 필터
+  let filtered = rows;
+  if (startDate) filtered = filtered.filter(r => r.date >= startDate && r.date <= endDate);
+
+  // 구매여부 필터
+  const buyFilter = filters.purchased || '전체';
+  if (buyFilter === '구매O') filtered = filtered.filter(r => r.purchased === 'Y');
+  if (buyFilter === '구매X') filtered = filtered.filter(r => r.purchased !== 'Y');
+
+  // 최신순 정렬
+  filtered.sort((a, b) => {
+    if (b.date !== a.date) return b.date > a.date ? 1 : -1;
+    return b.rowIndex - a.rowIndex;
+  });
+
+  // KPI
+  const todayRows = rows.filter(r => r.date === today && r.participated === 'Y');
+  const weekRows  = rows.filter(r => r.date >= week.start && r.date <= week.end && r.participated === 'Y');
+  const todayConv = todayRows.filter(r => r.purchased === 'Y').length;
+  const weekConv  = weekRows.filter(r => r.purchased === 'Y').length;
+
+  // 채널별 분석
+  const channelMap = {};
+  rows.forEach(r => {
+    if (r.participated === 'Y' && r.channel) {
+      channelMap[r.channel] = (channelMap[r.channel] || 0) + 1;
+    }
+  });
+
+  // 구매 상품 Top3
+  const productMap = {};
+  rows.forEach(r => {
+    r.products.forEach(p => {
+      if (p.name) productMap[p.name] = (productMap[p.name] || 0) + 1;
+    });
+  });
+  const topProducts = Object.entries(productMap).sort((a,b) => b[1]-a[1]).slice(0,3).map(([name,count]) => ({ name, count }));
+
+  return {
+    kpi: {
+      todayCount: todayRows.length,
+      todayRate:  todayRows.length > 0 ? Math.round(todayConv/todayRows.length*100) : null,
+      weekRate:   weekRows.length  > 0 ? Math.round(weekConv/weekRows.length*100)  : null,
+    },
+    breakdown: {
+      channel:     Object.entries(channelMap).map(([label, count]) => ({ label, count })),
+      topProducts,
+    },
+    list: filtered,
+    total: filtered.length,
+  };
+}
+
+/**
+ * 특이사항 후속조치 + 점장메모 수정
+ * payload: { rowIndex, followUp: 'Y'|'N', managerMemo }
+ */
+function updateNoteDetail(p) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.NOTE);
+  if (!sh) return { success: false, error: '특이사항 탭을 찾을 수 없습니다.' };
+
+  const rowIndex = Number(p.rowIndex);
+  if (!rowIndex || rowIndex < 2) return { success: false, error: '올바르지 않은 행 번호입니다.' };
+
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const ciFollowUp = headers.indexOf('후속조치필요');
+  const ciMemo     = headers.indexOf('점장메모');
+
+  if (p.followUp !== undefined && ciFollowUp >= 0)
+    sh.getRange(rowIndex, ciFollowUp + 1).setValue(p.followUp);
+  if (p.managerMemo !== undefined && ciMemo >= 0)
+    sh.getRange(rowIndex, ciMemo + 1).setValue(p.managerMemo);
+
+  return { success: true };
+}
 
 /**
  * 웹앱 POST 요청 처리: 직원 입력 폼 데이터 저장
@@ -861,22 +1379,59 @@ function doPost(e) {
 }
 
 function saveIssue(p) {
+  // 프론트는 issueType에 key(erp_mismatch 등)를 보냄
+  // 시트에는 한글로 저장해서 직원이 바로 알아볼 수 있게 함
+  const KEY_TO_LABEL = {
+    'erp_mismatch':  'ERP 재고 불일치',
+    'size_shortage': '사이즈 부족',
+    'product_damage':'제품 파손/오염/불량',
+  };
+  const issueTypeLabel = KEY_TO_LABEL[p.issueType] || p.issueTypeLabel || p.issueType || '';
+
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.ISSUE);
   sh.appendRow([
-    p.date || getTodayStr(),
-    p.author || '',
-    p.issueType || '',
-    p.brand || '',
-    p.product || '',
-    p.color || '',
-    p.size || '',
-    p.erpStock || '',
+    p.date     || getTodayStr(),
+    p.author   || '',
+    issueTypeLabel,
+    p.brand    || '',
+    p.product  || '',
+    p.color    || '',
+    p.size     || '',
+    p.erpStock  || '',
     p.realStock || '',
-    p.content || '',
-    '미확인',   // 처리상태 자동
-    '',          // 처리일
-    '',          // 점장메모
+    p.content  || '',
+    '미확인',
+    '',   // 처리일
+    '',   // 처리자
+    '',   // 점장메모
   ]);
+  return { success: true };
+}
+
+/**
+ * 제품 이슈 처리 상태 + 점장메모 변경
+ * payload: { rowIndex, status, resolver, managerMemo }
+ */
+function updateIssueStatus(p) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.ISSUE);
+  if (!sh) return { success: false, error: '제품이슈 탭을 찾을 수 없습니다.' };
+
+  const rowIndex = Number(p.rowIndex);
+  if (!rowIndex || rowIndex < 2) return { success: false, error: '올바르지 않은 행 번호입니다.' };
+
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const ciStatus   = headers.indexOf('처리상태');
+  const ciDate     = headers.indexOf('처리일');
+  const ciResolver = headers.indexOf('처리자');
+  const ciMemo     = headers.indexOf('점장메모');
+
+  if (ciStatus < 0) return { success: false, error: '처리상태 컬럼을 찾을 수 없습니다.' };
+
+  if (p.status !== undefined)      sh.getRange(rowIndex, ciStatus + 1).setValue(p.status);
+  if (ciDate >= 0)                 sh.getRange(rowIndex, ciDate + 1).setValue(getTodayStr());
+  if (ciResolver >= 0 && p.resolver !== undefined) sh.getRange(rowIndex, ciResolver + 1).setValue(p.resolver);
+  if (ciMemo >= 0 && p.managerMemo !== undefined)  sh.getRange(rowIndex, ciMemo + 1).setValue(p.managerMemo);
+
   return { success: true };
 }
 
@@ -920,29 +1475,58 @@ function saveNote(p) {
 
 function saveSafeSize(p) {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.SAFE);
-  sh.appendRow([
-    p.date || getTodayStr(),
-    p.author || '',
-    p.proceeded || 'N',
-    p.runningPurpose || '',
-    p.purchased || 'N',
-    p.purchasedProduct || '',
-    p.memo || '',
-  ]);
+  const today     = p.date || getTodayStr();
+  const author    = p.author || '';
+  const proceeded = p.proceeded || 'N';
+  const purpose   = p.runningPurpose || '';
+  const purchased = p.purchased || 'N';
+  const memo      = p.memo || '';
+  const sessionId = today + '_' + new Date().getTime();
+
+  const products = p.products || [];
+
+  if (purchased === 'Y' && products.length > 0) {
+    products.forEach(prod => {
+      sh.appendRow([
+        today, author, proceeded, purpose, purchased,
+        prod.name     || '',
+        prod.discount || '',
+        _safeNum(prod.price),
+        memo, sessionId,
+      ]);
+    });
+  } else {
+    sh.appendRow([today, author, proceeded, purpose, purchased, '', '', '', memo, sessionId]);
+  }
   return { success: true };
 }
 
 function saveSns(p) {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.SNS);
-  sh.appendRow([
-    p.date || getTodayStr(),
-    p.author || '',
-    p.participated || 'N',
-    p.channel || '',
-    p.purchased || 'N',
-    p.benefitGiven || 'N',
-    p.memo || '',
-  ]);
+  const today       = p.date || getTodayStr();
+  const author      = p.author || '';
+  const participated = p.participated || 'N';
+  const channel     = p.channel || '';
+  const purchased   = p.purchased || 'N';
+  const benefit     = p.benefitGiven || 'N';
+  const memo        = p.memo || '';
+  const sessionId   = today + '_' + new Date().getTime();
+
+  const products = p.products || [];
+
+  if (purchased === 'Y' && products.length > 0) {
+    products.forEach(prod => {
+      sh.appendRow([
+        today, author, participated, channel, purchased,
+        prod.name     || '',
+        prod.discount || '',
+        _safeNum(prod.price),
+        benefit, memo, sessionId,
+      ]);
+    });
+  } else {
+    sh.appendRow([today, author, participated, channel, purchased, '', '', '', benefit, memo, sessionId]);
+  }
   return { success: true };
 }
 
@@ -986,12 +1570,14 @@ function saveSetting(p) {
 
 function doPost_proxy(payload) {
   const type = payload.type;
-  if      (type === 'issue')    return saveIssue(payload);
-  else if (type === 'noreason') return saveNoReason(payload);
-  else if (type === 'note')     return saveNote(payload);
-  else if (type === 'safesize') return saveSafeSize(payload);
-  else if (type === 'sns')      return saveSns(payload);
-  else if (type === 'setting')  return saveSetting(payload);
+  if      (type === 'issue')         return saveIssue(payload);
+  else if (type === 'issue_status')  return updateIssueStatus(payload);
+  else if (type === 'noreason')      return saveNoReason(payload);
+  else if (type === 'note')          return saveNote(payload);
+  else if (type === 'note_detail')   return updateNoteDetail(payload);
+  else if (type === 'safesize')      return saveSafeSize(payload);
+  else if (type === 'sns')           return saveSns(payload);
+  else if (type === 'setting')       return saveSetting(payload);
   return { success: false, error: '알 수 없는 type: ' + type };
 }
 
