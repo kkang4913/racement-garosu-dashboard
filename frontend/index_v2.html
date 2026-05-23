@@ -1,3 +1,10 @@
+<!--
+RACEMENT Garosu Dashboard
+File: frontend/index_v2.html
+Version: v0.4
+Purpose: Google Apps Script Web App frontend
+Last Updated: 2026-05-23
+-->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -18,6 +25,7 @@
   --text-hint:#9CA3AF;
   --orange:#FF5A1F;
   --orange-light:#FFF0EB;
+  --accent:#FF5A1F;
   --good:#16A34A;
   --good-bg:#F0FDF4;
   --warn:#F59E0B;
@@ -233,6 +241,41 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:transparent;font-family:inherit;font-size:11px;font-weight:600;color:var(--text-hint);cursor:pointer;transition:color 0.15s;padding:8px 4px}
 .tab-btn .t-icon{font-size:20px;line-height:1}
 .tab-btn.active{color:var(--orange)}
+/* ── 탭 게시판 공통 ── */
+.tab-screen-wrap{padding:16px 16px 100px;max-width:720px;margin:0 auto}
+.tab-screen-header{margin-bottom:16px}
+.tab-screen-title{font-size:20px;font-weight:800;color:var(--text)}
+.tab-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.tab-kpi-item{background:var(--card);border-radius:12px;padding:14px 12px;text-align:center;border:1px solid var(--border)}
+.tab-kpi-value{font-size:22px;font-weight:800;color:var(--accent);margin-bottom:4px}
+.tab-kpi-label{font-size:11px;color:var(--text-sub);font-weight:600}
+.tab-section{margin-bottom:12px}
+.tab-section-label{font-size:11px;font-weight:700;color:var(--text-sub);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.breakdown-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.breakdown-badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--bg);color:var(--text-sub);border:1px solid var(--border)}
+.tab-filter-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.tab-filter-btn{font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text-sub);cursor:pointer;transition:all .15s}
+.tab-filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tab-list-body{display:flex;flex-direction:column;gap:0}
+.tab-loading{padding:40px;text-align:center;color:var(--text-hint);font-size:14px}
+.tab-list-item{background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;border:1px solid var(--border);transition:box-shadow .15s}
+.tab-list-item:hover{box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.tab-list-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.tab-status-dot{font-size:12px;font-weight:700;margin-left:auto}
+.tab-list-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.tab-list-desc{font-size:13px;color:var(--text-sub);margin-bottom:4px}
+.tab-list-meta{font-size:12px;color:var(--text-hint)}
+.tab-fab{position:fixed;bottom:88px;right:20px;background:var(--accent);color:#fff;border:none;border-radius:50px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:200}
+/* 상세 팝업 */
+.detail-section{margin-bottom:20px}
+.detail-section+.detail-section{border-top:1px solid var(--border);padding-top:20px}
+.detail-row{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.detail-row:last-child{border-bottom:none}
+.detail-label{font-size:12px;font-weight:600;color:var(--text-sub);min-width:90px;flex-shrink:0}
+.detail-val{font-size:14px;color:var(--text);word-break:break-all}
+.detail-edit{background:var(--bg);border-radius:12px;padding:16px}
+/* 등록 모달 */
+.register-modal-body{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;padding:24px}
 </style>
 </head>
 <body>
@@ -345,196 +388,107 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 <!-- ════ 제품이슈 폼 ════ -->
 <div id="screen-productIssue" class="screen">
-  <div class="form-wrap">
-    <div class="form-heading">제품 이슈 등록</div>
-    <div class="form-subheading">직원이 발견한 제품 관련 이슈를 기록합니다.</div>
-    <div class="form-step">
-      <div class="step-label">Step 1. 이슈 유형 <span style="color:var(--danger)">*</span></div>
-      <div class="btn-group">
-        <!-- label / key 분리 -->
-        <button class="btn-opt" data-key="erp_mismatch" onclick="sel(this,'issueType')">ERP 재고 불일치</button>
-        <button class="btn-opt" data-key="size_shortage" onclick="sel(this,'issueType')">사이즈 부족</button>
-        <button class="btn-opt" data-key="product_damage" onclick="sel(this,'issueType')">제품 파손/오염/불량</button>
-      </div>
+  <div class="tab-screen-wrap">
+    <div class="tab-screen-header">
+      <div class="tab-screen-title">제품 이슈</div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 2. 상품 정보</div>
-      <div class="f-grid" style="margin-bottom:10px">
-        <div><label class="f-label">브랜드 <span class="req">*</span></label><input class="f-input" id="i-brand" placeholder="예: 나이키"></div>
-        <div><label class="f-label">상품명 <span class="req">*</span></label><input class="f-input" id="i-product" placeholder="예: 페가수스 42"></div>
-      </div>
-      <div class="f-grid" style="margin-bottom:10px">
-        <div><label class="f-label">색상</label><input class="f-input" id="i-color" placeholder="예: 블랙"></div>
-        <div><label class="f-label">사이즈</label><input class="f-input" id="i-size" placeholder="예: 275"></div>
-      </div>
-      <div class="f-grid">
-        <div><label class="f-label">ERP 재고</label><input class="f-input" id="i-erp" type="number" placeholder="0"></div>
-        <div><label class="f-label">실재고</label><input class="f-input" id="i-real" type="number" placeholder="0"></div>
-      </div>
+    <div id="tab-issue-kpi" class="tab-kpi"></div>
+    <div class="tab-section">
+      <div class="tab-section-label">유형별 현황</div>
+      <div id="tab-issue-breakdown" class="breakdown-wrap"></div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 3. 이슈 내용 및 작성자</div>
-      <label class="f-label">이슈 내용 <span class="req">*</span></label>
-      <textarea class="f-input ta" id="i-content" placeholder="이슈 내용을 입력하세요" style="margin-bottom:10px"></textarea>
-      <label class="f-label">작성자</label>
-      <input class="f-input" id="i-author" placeholder="이름">
+    <div class="tab-section">
+      <div id="tab-issue-filter" class="tab-filter-wrap"></div>
     </div>
-    <button class="btn-save" id="btn-issue" onclick="submitForm('issue')">저장하기</button>
+    <div id="tab-issue-body" class="tab-list-body">
+      <div class="tab-loading">불러오는 중...</div>
+    </div>
   </div>
+  <button class="tab-fab" onclick="openRegisterModal('issue')">＋ 이슈 등록</button>
 </div>
 
 <!-- ════ 미구매 사유 폼 ════ -->
 <div id="screen-noPurchase" class="screen">
-  <div class="form-wrap">
-    <div class="form-heading">미구매 사유 등록</div>
-    <div class="form-subheading">고객이 구매하지 않은 이유를 기록합니다.</div>
-    <div class="form-step">
-      <div class="step-label">Step 1. 카테고리 <span style="color:var(--danger)">*</span></div>
-      <div class="btn-group">
-        <button class="btn-opt" onclick="sel(this,'nr-cat')">신발</button>
-        <button class="btn-opt" onclick="sel(this,'nr-cat')">의류</button>
-        <button class="btn-opt" onclick="sel(this,'nr-cat')">용품</button>
-        <button class="btn-opt" onclick="sel(this,'nr-cat')">기타</button>
-      </div>
+  <div class="tab-screen-wrap">
+    <div class="tab-screen-header">
+      <div class="tab-screen-title">미구매 사유</div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 2. 미구매 사유 <span style="color:var(--danger)">*</span></div>
-      <div class="btn-group">
-        <button class="btn-opt" onclick="sel(this,'nr-reason')">사이즈/재고 부족</button>
-        <button class="btn-opt" onclick="sel(this,'nr-reason')">착화감 불만</button>
-        <button class="btn-opt" onclick="sel(this,'nr-reason')">가격 부담</button>
-        <button class="btn-opt" onclick="sel(this,'nr-reason')">디자인/컬러 불만</button>
-        <button class="btn-opt" onclick="sel(this,'nr-reason')">원하는 상품/브랜드 없음</button>
-        <button class="btn-opt" onclick="sel(this,'nr-reason')">비교 후 고민</button>
-        <button class="btn-opt" onclick="sel(this,'nr-reason')">구매 시점 아님</button>
-        <button class="btn-opt" onclick="sel(this,'nr-reason')">기타/직원 메모 필요</button>
-      </div>
+    <div id="tab-noreason-kpi" class="tab-kpi"></div>
+    <div class="tab-section">
+      <div class="tab-section-label">사유별 분석 (이번 주)</div>
+      <div id="tab-noreason-breakdown" class="breakdown-wrap"></div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 3. 상세 정보</div>
-      <div class="f-grid" style="margin-bottom:10px">
-        <div><label class="f-label">브랜드</label><input class="f-input" id="nr-brand" placeholder="예: 온러닝"></div>
-        <div><label class="f-label">상품명</label><input class="f-input" id="nr-product" placeholder="예: 클라우드몬스터 3"></div>
-      </div>
-      <div class="f-grid" style="margin-bottom:10px">
-        <div><label class="f-label">사이즈</label><input class="f-input" id="nr-size" placeholder="예: 260"></div>
-        <div><label class="f-label">작성자</label><input class="f-input" id="nr-author" placeholder="이름"></div>
-      </div>
-      <label class="f-label">메모</label>
-      <textarea class="f-input ta" id="nr-memo" placeholder="추가 메모" style="min-height:70px"></textarea>
+    <div class="tab-section">
+      <div id="tab-noreason-filter" class="tab-filter-wrap"></div>
     </div>
-    <button class="btn-save" id="btn-noreason" onclick="submitForm('noreason')">저장하기</button>
+    <div id="tab-noreason-body" class="tab-list-body">
+      <div class="tab-loading">불러오는 중...</div>
+    </div>
   </div>
+  <button class="tab-fab" onclick="openRegisterModal('noreason')">＋ 미구매 등록</button>
 </div>
 
 <!-- ════ 특이사항 폼 ════ -->
 <div id="screen-specialNote" class="screen">
-  <div class="form-wrap">
-    <div class="form-heading">오늘의 특이사항</div>
-    <div class="form-subheading">오늘 매장에서 발생한 특이한 상황을 기록합니다.</div>
-    <div class="form-step">
-      <div class="step-label">Step 1. 내용 <span style="color:var(--danger)">*</span></div>
-      <textarea class="f-input ta" id="note-content" placeholder="예: 러닝 크루 단체 방문 예정 (오후 3시)" style="min-height:100px"></textarea>
+  <div class="tab-screen-wrap">
+    <div class="tab-screen-header">
+      <div class="tab-screen-title">특이사항</div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 2. 중요도</div>
-      <div class="btn-group" id="note-level-group">
-        <button class="btn-opt" onclick="sel(this,'note-level')">낮음</button>
-        <button class="btn-opt sel" onclick="sel(this,'note-level')">보통</button>
-        <button class="btn-opt" onclick="sel(this,'note-level')">높음</button>
-      </div>
+    <div id="tab-note-kpi" class="tab-kpi"></div>
+    <div class="tab-section">
+      <div class="tab-section-label">중요도별 현황</div>
+      <div id="tab-note-breakdown" class="breakdown-wrap"></div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 3. 후속 조치 및 작성자</div>
-      <div class="btn-group" id="note-followup-group" style="margin-bottom:12px">
-        <button class="btn-opt" onclick="sel(this,'note-followup')">후속 조치 필요</button>
-        <button class="btn-opt sel" onclick="sel(this,'note-followup')">불필요</button>
-      </div>
-      <label class="f-label">작성자</label>
-      <input class="f-input" id="note-author" placeholder="이름">
+    <div class="tab-section">
+      <div id="tab-note-filter" class="tab-filter-wrap"></div>
     </div>
-    <button class="btn-save" id="btn-note" onclick="submitForm('note')">저장하기</button>
+    <div id="tab-note-body" class="tab-list-body">
+      <div class="tab-loading">불러오는 중...</div>
+    </div>
   </div>
+  <button class="tab-fab" onclick="openRegisterModal('note')">＋ 특이사항 등록</button>
 </div>
 
 <!-- ════ 세이프사이즈 폼 ════ -->
 <div id="screen-safeSize" class="screen">
-  <div class="form-wrap">
-    <div class="form-heading">세이프사이즈 체크</div>
-    <div class="form-subheading">족형분석 서비스 진행 내용을 기록합니다.</div>
-    <div class="form-step">
-      <div class="step-label">Step 1. 세이프사이즈 진행 여부 <span style="color:var(--danger)">*</span></div>
-      <div class="btn-group">
-        <button class="btn-opt" onclick="sel(this,'ss-proc')">Y — 진행함</button>
-        <button class="btn-opt" onclick="sel(this,'ss-proc')">N — 진행 안 함</button>
-      </div>
+  <div class="tab-screen-wrap">
+    <div class="tab-screen-header">
+      <div class="tab-screen-title">세이프사이즈</div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 2. 구매 여부 <span style="color:var(--danger)">*</span></div>
-      <div class="btn-group">
-        <button class="btn-opt" onclick="sel(this,'ss-buy')">Y — 구매함</button>
-        <button class="btn-opt" onclick="sel(this,'ss-buy')">N — 구매 안 함</button>
-      </div>
+    <div id="tab-safesize-kpi" class="tab-kpi"></div>
+    <div class="tab-section">
+      <div class="tab-section-label">러닝 목적 / 인기 상품</div>
+      <div id="tab-safesize-breakdown" class="breakdown-wrap"></div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 3. 상세 정보</div>
-      <div class="step-label" style="margin-bottom:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text-sub)">러닝 목적</div>
-      <div class="btn-group" style="margin-bottom:14px">
-        <button class="btn-opt" onclick="sel(this,'ss-purpose')">건강 달리기</button>
-        <button class="btn-opt" onclick="sel(this,'ss-purpose')">대회 준비</button>
-        <button class="btn-opt" onclick="sel(this,'ss-purpose')">부상 회복</button>
-        <button class="btn-opt" onclick="sel(this,'ss-purpose')">기타</button>
-      </div>
-      <label class="f-label">구매 상품</label>
-      <input class="f-input" id="ss-product" placeholder="예: 클라우드몬스터 3" style="margin-bottom:10px">
-      <label class="f-label">고객 반응 메모</label>
-      <textarea class="f-input ta" id="ss-memo" placeholder="예: 발볼 설명 후 만족" style="min-height:70px;margin-bottom:10px"></textarea>
-      <label class="f-label">작성자</label>
-      <input class="f-input" id="ss-author" placeholder="이름">
+    <div class="tab-section">
+      <div id="tab-safesize-filter" class="tab-filter-wrap"></div>
     </div>
-    <button class="btn-save" id="btn-safesize" onclick="submitForm('safesize')">저장하기</button>
+    <div id="tab-safesize-body" class="tab-list-body">
+      <div class="tab-loading">불러오는 중...</div>
+    </div>
   </div>
+  <button class="tab-fab" onclick="openRegisterModal('safesize')">＋ 세이프사이즈 등록</button>
 </div>
 
 <!-- ════ SNS 폼 ════ -->
 <div id="screen-sns" class="screen">
-  <div class="form-wrap">
-    <div class="form-heading">SNS 인증 이벤트 체크</div>
-    <div class="form-subheading">SNS 인증 이벤트 참여 내용을 기록합니다.</div>
-    <div class="form-step">
-      <div class="step-label">Step 1. SNS 인증 참여 여부 <span style="color:var(--danger)">*</span></div>
-      <div class="btn-group">
-        <button class="btn-opt" onclick="sel(this,'sns-part')">Y — 참여함</button>
-        <button class="btn-opt" onclick="sel(this,'sns-part')">N — 참여 안 함</button>
-      </div>
+  <div class="tab-screen-wrap">
+    <div class="tab-screen-header">
+      <div class="tab-screen-title">SNS 인증 이벤트</div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 2. 구매 여부 <span style="color:var(--danger)">*</span></div>
-      <div class="btn-group">
-        <button class="btn-opt" onclick="sel(this,'sns-buy')">Y — 구매함</button>
-        <button class="btn-opt" onclick="sel(this,'sns-buy')">N — 구매 안 함</button>
-      </div>
+    <div id="tab-sns-kpi" class="tab-kpi"></div>
+    <div class="tab-section">
+      <div class="tab-section-label">채널별 / 인기 상품</div>
+      <div id="tab-sns-breakdown" class="breakdown-wrap"></div>
     </div>
-    <div class="form-step">
-      <div class="step-label">Step 3. 상세 정보</div>
-      <div class="step-label" style="margin-bottom:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text-sub)">인증 채널</div>
-      <div class="btn-group" style="margin-bottom:14px">
-        <button class="btn-opt" onclick="sel(this,'sns-ch')">인스타그램</button>
-        <button class="btn-opt" onclick="sel(this,'sns-ch')">블로그</button>
-        <button class="btn-opt" onclick="sel(this,'sns-ch')">기타</button>
-      </div>
-      <div class="step-label" style="margin-bottom:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text-sub)">혜택 제공 여부</div>
-      <div class="btn-group" style="margin-bottom:14px">
-        <button class="btn-opt" onclick="sel(this,'sns-benefit')">Y — 제공함</button>
-        <button class="btn-opt" onclick="sel(this,'sns-benefit')">N — 미제공</button>
-      </div>
-      <label class="f-label">고객 반응 메모</label>
-      <textarea class="f-input ta" id="sns-memo" placeholder="예: 인증 후 구매 보류, 재방문 예정" style="min-height:70px;margin-bottom:10px"></textarea>
-      <label class="f-label">작성자</label>
-      <input class="f-input" id="sns-author" placeholder="이름">
+    <div class="tab-section">
+      <div id="tab-sns-filter" class="tab-filter-wrap"></div>
     </div>
-    <button class="btn-save" id="btn-sns" onclick="submitForm('sns')">저장하기</button>
+    <div id="tab-sns-body" class="tab-list-body">
+      <div class="tab-loading">불러오는 중...</div>
+    </div>
   </div>
+  <button class="tab-fab" onclick="openRegisterModal('sns')">＋ SNS 인증 등록</button>
 </div>
 
 <!-- ════ 점장 설정 ════ -->
@@ -678,7 +632,7 @@ function loadDashboardData() {
   if (IS_GAS) {
     google.script.run
       .withSuccessHandler(function(d) {
-        dashData = d;
+        dashData = d || buildEmptyData();
         render(dashData);
         showLoading(false);
       })
@@ -731,6 +685,16 @@ function showScreen(name) {
   const t = document.querySelector(`.tab-btn[data-sc="${name}"]`);
   if(t) t.classList.add('active');
   window.scrollTo(0,0);
+
+  // 탭 진입 시 해당 탭 데이터 로딩
+  const tabLoaders = {
+    productIssue: () => loadTabData('issue'),
+    noPurchase:   () => loadTabData('noreason'),
+    specialNote:  () => loadTabData('note'),
+    safeSize:     () => loadTabData('safesize'),
+    sns:          () => loadTabData('sns'),
+  };
+  if(tabLoaders[name]) tabLoaders[name]();
 }
 
 // ══════════════════════════════════════
@@ -863,19 +827,29 @@ function renderC03(d) {
 function renderC04(d) {
   const badge=document.getElementById('c04-badge');
   const body=document.getElementById('c04-body');
-  if(!d||d.pendingTotal===0) {
+  const pending = d?.pending || [];
+  const pendingTotal = d?.pendingTotal ?? pending.length;
+  if(!d||pendingTotal===0) {
     badge.innerHTML='';
     body.innerHTML=`<div class="empty">현재 미처리 이슈가 없습니다. ✓</div>`;
     return;
   }
-  // 뱃지는 전체 미처리 건수(pendingTotal) 기준
-  badge.innerHTML=`<span class="badge badge-danger">미처리 ${d.pendingTotal}건</span>`;
-  // 홈에는 최대 5건만 노출
-  const show=(d.pending||[]).slice(0,5);
-  const more=d.pendingTotal>5?`<div class="issue-more">외 ${d.pendingTotal-5}건 더 있음 (제품이슈 탭에서 확인)</div>`:'';
+  badge.innerHTML=`<span class="badge badge-danger">미처리 ${pendingTotal}건</span>`;
+  const show=pending.slice(0,5);
+  const more=pendingTotal>5?`<div class="issue-more">외 ${pendingTotal-5}건 더 있음</div>`:'';
+  const STATUS_OPTS=['미확인','확인중','처리완료'];
   body.innerHTML=show.map(issue=>{
     const typeKey=esc(issue.type||'');
     const typeLabel=esc(issue.typeLabel||ISSUE_TYPE_MAP[issue.type]||issue.type||'');
+    const resolverInfo=issue.resolver?` · ${esc(issue.resolver)} 처리`:'';
+    const resolvedDate=issue.resolvedAt?` · ${esc(issue.resolvedAt)}`:'';
+    const statusBtns=STATUS_OPTS.map(s=>
+      `<button onclick="openIssueStatusModal('${esc(issue.rowIndex)}','${s}')"
+        style="font-size:11px;padding:3px 9px;border-radius:6px;cursor:pointer;margin-right:4px;
+               border:1px solid ${issue.status===s?'var(--accent)':'var(--border)'};
+               background:${issue.status===s?'var(--accent)':'transparent'};
+               color:${issue.status===s?'#fff':'var(--text-sub)'}">${esc(s)}</button>`
+    ).join('');
     return `<div class="issue-item">
       <div class="issue-header">
         <span class="issue-type type-${typeKey}">${typeLabel}</span>
@@ -883,9 +857,61 @@ function renderC04(d) {
       </div>
       <div class="issue-product-name">${esc(issue.brand)} ${esc(issue.product)}${issue.size?' '+esc(issue.size)+'mm':''}</div>
       <div class="issue-desc">${esc(issue.content)}</div>
-      <div class="issue-meta">${esc(issue.date)} · ${esc(issue.author)}</div>
+      <div class="issue-meta">${esc(issue.date)} · ${esc(issue.author)}${resolvedDate}${resolverInfo}</div>
+      <div style="margin-top:8px">${statusBtns}</div>
     </div>`;
   }).join('')+more;
+}
+
+// ── 이슈 상태 변경 팝업 ──────────────────────────────────────────
+function openIssueStatusModal(rowIndex, newStatus) {
+  let modal=document.getElementById('issue-status-modal');
+  if(!modal) {
+    modal=document.createElement('div');
+    modal.id='issue-status-modal';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML=`
+    <div style="background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:360px">
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px">처리 상태 변경</div>
+      <div style="font-size:13px;color:var(--text-sub);margin-bottom:16px">
+        → <strong style="color:var(--text)">${esc(newStatus)}</strong> 으로 변경합니다
+      </div>
+      <label class="f-label">처리자 이름 <span style="color:var(--danger)">*</span></label>
+      <input class="f-input" id="modal-resolver" placeholder="이름을 입력하세요" style="margin-bottom:16px">
+      <div style="display:flex;gap:8px">
+        <button onclick="closeIssueStatusModal()"
+          style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-sub);cursor:pointer;font-size:14px">
+          취소
+        </button>
+        <button onclick="submitIssueStatus('${esc(rowIndex)}','${esc(newStatus)}')"
+          style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:14px;font-weight:700">
+          변경하기
+        </button>
+      </div>
+    </div>`;
+  modal.style.display='flex';
+  setTimeout(()=>{ const inp=document.getElementById('modal-resolver'); if(inp) inp.focus(); },100);
+}
+
+function closeIssueStatusModal() {
+  const modal=document.getElementById('issue-status-modal');
+  if(modal) modal.style.display='none';
+}
+
+function submitIssueStatus(rowIndex, newStatus) {
+  const resolver=(document.getElementById('modal-resolver').value||'').trim();
+  if(!resolver){showToast('처리자 이름을 입력해주세요.',true);return;}
+  const payload={type:'issue_status',rowIndex,status:newStatus,resolver};
+  saveData('issue_status',payload,
+    function(){
+      closeIssueStatusModal();
+      showToast('"'+newStatus+'" 으로 변경되었습니다.');
+      loadDashboardData();
+    },
+    function(err){ showToast('변경 실패: '+(err||'오류'),true); }
+  );
 }
 
 // ── C05 ──
@@ -1064,18 +1090,63 @@ function buildPayload(type) {
     return{type:'note',content,level:getSelected('note-level')||'보통',followUp:getSelected('note-followup')==='후속 조치 필요'?'Y':'N',author:v('note-author')};
   }
   if(type==='safesize') {
-    const proc=getSelected('ss-proc');
-    const buy=getSelected('ss-buy');
-    if(!proc){showToast('진행 여부를 선택해주세요.',true);return null}
-    if(!buy){showToast('구매 여부를 선택해주세요.',true);return null}
-    return{type:'safesize',proceeded:proc.startsWith('Y')?'Y':'N',purchased:buy.startsWith('Y')?'Y':'N',runningPurpose:getSelected('ss-purpose')||'',purchasedProduct:v('ss-product'),memo:v('ss-memo'),author:v('ss-author')};
+    const proc = document.getElementById('ss-proc').value;
+    const buy  = document.getElementById('ss-buy').value;
+    if(!proc){showToast('진행 여부를 선택해주세요.',true);return null;}
+    if(proc==='Y' && !buy){showToast('구매 여부를 선택해주세요.',true);return null;}
+
+    let products = [];
+    if(proc==='Y' && buy==='Y') {
+      const blocks = document.querySelectorAll('#ss-products-container .product-block');
+      for(let i=0; i<blocks.length; i++) {
+        const name = blocks[i].querySelector('.ss-pname').value.trim();
+        if(!name){showToast('상품명을 입력해주세요.',true);return null;}
+        products.push({
+          name:     name,
+          discount: blocks[i].querySelector('.ss-pdiscount').value.trim(),
+          price:    blocks[i].querySelector('.ss-pprice').value.trim(),
+        });
+      }
+    }
+    return {
+      type:'safesize',
+      proceeded:      proc,
+      purchased:      proc==='Y' ? (buy||'N') : 'N',
+      products:       products,
+      runningPurpose: getSelected('ss-purpose')||'',
+      memo:           v('ss-memo'),
+      author:         v('ss-author'),
+    };
   }
   if(type==='sns') {
-    const part=getSelected('sns-part');
-    const buy=getSelected('sns-buy');
-    if(!part){showToast('참여 여부를 선택해주세요.',true);return null}
-    if(!buy){showToast('구매 여부를 선택해주세요.',true);return null}
-    return{type:'sns',participated:part.startsWith('Y')?'Y':'N',purchased:buy.startsWith('Y')?'Y':'N',channel:getSelected('sns-ch')||'',benefitGiven:getSelected('sns-benefit')||'N',memo:v('sns-memo'),author:v('sns-author')};
+    const part = document.getElementById('sns-part').value;
+    const buy  = document.getElementById('sns-buy').value;
+    if(!part){showToast('참여 여부를 선택해주세요.',true);return null;}
+    if(part==='Y' && !buy){showToast('구매 여부를 선택해주세요.',true);return null;}
+
+    let products = [];
+    if(part==='Y' && buy==='Y') {
+      const blocks = document.querySelectorAll('#sns-products-container .product-block');
+      for(let i=0; i<blocks.length; i++) {
+        const name = blocks[i].querySelector('.sns-pname').value.trim();
+        if(!name){showToast('상품명을 입력해주세요.',true);return null;}
+        products.push({
+          name:     name,
+          discount: blocks[i].querySelector('.sns-pdiscount').value.trim(),
+          price:    blocks[i].querySelector('.sns-pprice').value.trim(),
+        });
+      }
+    }
+    return {
+      type:'sns',
+      participated:  part,
+      purchased:     part==='Y' ? (buy||'N') : 'N',
+      products:      products,
+      channel:       getSelected('sns-ch')||'',
+      benefitGiven:  (()=>{ const b=getSelected('sns-benefit')||''; return b.startsWith('Y')?'Y':b.startsWith('N')?'N':''; })(),
+      memo:          v('sns-memo'),
+      author:        v('sns-author'),
+    };
   }
   if(type==='setting') {
     return{type:'setting',storeStatus:v('set-status'),action1:v('set-a1'),action2:v('set-a2'),action3:v('set-a3'),action4:v('set-a4'),action5:v('set-a5'),commentSales:v('set-c-sales'),commentProduct:v('set-c-product'),commentNoReason:v('set-c-noreason')};
@@ -1115,7 +1186,8 @@ function resetForm(type) {
   const screenMap={issue:'productIssue',noreason:'noPurchase',note:'specialNote',safesize:'safeSize',sns:'sns',setting:'manager'};
   const sc=document.getElementById('screen-'+screenMap[type]);
   if(!sc) return;
-  sc.querySelectorAll('input,textarea').forEach(el=>el.value='');
+  sc.querySelectorAll('input:not([type=hidden]),textarea').forEach(el=>el.value='');
+  sc.querySelectorAll('input[type=hidden]').forEach(el=>el.value='');
   sc.querySelectorAll('.btn-opt').forEach(b=>b.classList.remove('sel'));
 
   // 특이사항 폼 기본값 복원
@@ -1125,11 +1197,1052 @@ function resetForm(type) {
     if(lvGroup) lvGroup.querySelectorAll('.btn-opt').forEach(b=>{b.classList.toggle('sel',b.textContent.trim()==='보통')});
     if(fuGroup) fuGroup.querySelectorAll('.btn-opt').forEach(b=>{b.classList.toggle('sel',b.textContent.trim()==='불필요')});
   }
+
+  // 세이프사이즈 리셋
+  if(type==='safesize') {
+    ['ss-step2','ss-step3','ss-step4'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display='none';
+    });
+    // 동적 추가 상품 블록 제거 (첫 번째 제외)
+    const container=document.getElementById('ss-products-container');
+    if(container) {
+      const blocks=container.querySelectorAll('.product-block');
+      blocks.forEach((b,i)=>{ if(i>0) b.remove(); });
+      // 첫 번째 블록 입력값 초기화
+      if(blocks[0]) {
+        blocks[0].querySelectorAll('input').forEach(el=>el.value='');
+      }
+    }
+    const addBtn=document.getElementById('ss-add-btn');
+    if(addBtn) addBtn.style.display='';
+  }
+
+  // SNS 인증 리셋
+  if(type==='sns') {
+    ['sns-step2','sns-step3','sns-step4'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display='none';
+    });
+    // 동적 추가 상품 블록 제거 (첫 번째 제외)
+    const container=document.getElementById('sns-products-container');
+    if(container) {
+      const blocks=container.querySelectorAll('.product-block');
+      blocks.forEach((b,i)=>{ if(i>0) b.remove(); });
+      if(blocks[0]) {
+        blocks[0].querySelectorAll('input').forEach(el=>el.value='');
+      }
+    }
+    const addBtn=document.getElementById('sns-add-btn');
+    if(addBtn) addBtn.style.display='';
+  }
+}
+
+// ── 세이프사이즈 조건부 Step 제어 ──────────────────────────────
+function ssSel(btn, groupId, hiddenId, val) {
+  document.querySelectorAll('#'+groupId+' .btn-opt').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById(hiddenId).value = val;
+
+  if(hiddenId === 'ss-proc') {
+    if(val === 'Y') {
+      document.getElementById('ss-step2').style.display = '';
+    } else {
+      // Step 2~4 숨기고 하위 입력값 전부 초기화
+      ['ss-step2','ss-step3','ss-step4'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) {
+          el.style.display = 'none';
+          el.querySelectorAll('input:not([type=hidden]),textarea').forEach(i=>i.value='');
+          el.querySelectorAll('.btn-opt').forEach(b=>b.classList.remove('sel'));
+        }
+      });
+      document.getElementById('ss-buy').value = '';
+      // 상품 블록 초기화 (첫 번째만 남기고 삭제)
+      const container = document.getElementById('ss-products-container');
+      if(container) {
+        const blocks = container.querySelectorAll('.product-block');
+        blocks.forEach((b,i)=>{ if(i>0) b.remove(); });
+        if(blocks[0]) blocks[0].querySelectorAll('input').forEach(i=>i.value='');
+      }
+      const addBtn = document.getElementById('ss-add-btn');
+      if(addBtn) addBtn.style.display = '';
+    }
+  }
+  if(hiddenId === 'ss-buy') {
+    if(val === 'Y') {
+      document.getElementById('ss-step3').style.display = '';
+      document.getElementById('ss-step4').style.display = '';
+    } else {
+      // Step 3 숨기고 상품 입력값 초기화
+      const step3 = document.getElementById('ss-step3');
+      if(step3) {
+        step3.style.display = 'none';
+        const container = document.getElementById('ss-products-container');
+        if(container) {
+          const blocks = container.querySelectorAll('.product-block');
+          blocks.forEach((b,i)=>{ if(i>0) b.remove(); });
+          if(blocks[0]) blocks[0].querySelectorAll('input').forEach(i=>i.value='');
+        }
+        const addBtn = document.getElementById('ss-add-btn');
+        if(addBtn) addBtn.style.display = '';
+      }
+      document.getElementById('ss-step4').style.display = '';
+    }
+  }
+}
+
+// ── SNS 인증 조건부 Step 제어 ────────────────────────────────────
+function snsSel(btn, groupId, hiddenId, val) {
+  document.querySelectorAll('#'+groupId+' .btn-opt').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById(hiddenId).value = val;
+
+  if(hiddenId === 'sns-part') {
+    if(val === 'Y') {
+      document.getElementById('sns-step2').style.display = '';
+    } else {
+      // Step 2~4 숨기고 하위 입력값 전부 초기화
+      ['sns-step2','sns-step3','sns-step4'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) {
+          el.style.display = 'none';
+          el.querySelectorAll('input:not([type=hidden]),textarea').forEach(i=>i.value='');
+          el.querySelectorAll('.btn-opt').forEach(b=>b.classList.remove('sel'));
+        }
+      });
+      document.getElementById('sns-buy').value = '';
+      const container = document.getElementById('sns-products-container');
+      if(container) {
+        const blocks = container.querySelectorAll('.product-block');
+        blocks.forEach((b,i)=>{ if(i>0) b.remove(); });
+        if(blocks[0]) blocks[0].querySelectorAll('input').forEach(i=>i.value='');
+      }
+      const addBtn = document.getElementById('sns-add-btn');
+      if(addBtn) addBtn.style.display = '';
+    }
+  }
+  if(hiddenId === 'sns-buy') {
+    if(val === 'Y') {
+      document.getElementById('sns-step3').style.display = '';
+      document.getElementById('sns-step4').style.display = '';
+    } else {
+      // Step 3 숨기고 상품 입력값 초기화
+      const step3 = document.getElementById('sns-step3');
+      if(step3) {
+        step3.style.display = 'none';
+        const container = document.getElementById('sns-products-container');
+        if(container) {
+          const blocks = container.querySelectorAll('.product-block');
+          blocks.forEach((b,i)=>{ if(i>0) b.remove(); });
+          if(blocks[0]) blocks[0].querySelectorAll('input').forEach(i=>i.value='');
+        }
+        const addBtn = document.getElementById('sns-add-btn');
+        if(addBtn) addBtn.style.display = '';
+      }
+      document.getElementById('sns-step4').style.display = '';
+    }
+  }
+}
+
+// ── 세이프사이즈 상품 추가/삭제 ─────────────────────────────────
+function ssAddProduct() {
+  const container = document.getElementById('ss-products-container');
+  const count = container.querySelectorAll('.product-block').length;
+  if(count >= 10) return;
+  const idx = count + 1;
+  const block = document.createElement('div');
+  block.className = 'product-block';
+  block.style.marginTop = '12px';
+  block.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--text-sub)">상품 ${idx}</span>
+      <button type="button" onclick="ssRemoveProduct(this)" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:2px 6px">✕ 삭제</button>
+    </div>
+    <label class="f-label">상품명 <span style="color:var(--danger)">*</span></label>
+    <input class="f-input ss-pname" placeholder="예: 클라우드몬스터 3" style="margin-bottom:8px">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div style="flex:1">
+        <label class="f-label">할인율</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input class="f-input ss-pdiscount" type="number" min="0" max="100" placeholder="0" style="margin-bottom:0">
+          <span style="color:var(--text-sub);font-size:14px">%</span>
+        </div>
+      </div>
+      <div style="flex:1">
+        <label class="f-label">판매금액</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input class="f-input ss-pprice" type="number" min="0" placeholder="0" style="margin-bottom:0">
+          <span style="color:var(--text-sub);font-size:14px">원</span>
+        </div>
+      </div>
+    </div>`;
+  container.appendChild(block);
+  if(container.querySelectorAll('.product-block').length >= 10) {
+    document.getElementById('ss-add-btn').style.display = 'none';
+  }
+}
+function ssRemoveProduct(btn) {
+  btn.closest('.product-block').remove();
+  document.getElementById('ss-add-btn').style.display = '';
+  // 번호 재정렬
+  document.querySelectorAll('#ss-products-container .product-block').forEach((b,i)=>{
+    const label = b.querySelector('span[style*="text-sub"]');
+    if(label) label.textContent = '상품 '+(i+1);
+  });
+}
+
+// ── SNS 인증 상품 추가/삭제 ──────────────────────────────────────
+function snsAddProduct() {
+  const container = document.getElementById('sns-products-container');
+  const count = container.querySelectorAll('.product-block').length;
+  if(count >= 10) return;
+  const idx = count + 1;
+  const block = document.createElement('div');
+  block.className = 'product-block';
+  block.style.marginTop = '12px';
+  block.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--text-sub)">상품 ${idx}</span>
+      <button type="button" onclick="snsRemoveProduct(this)" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:2px 6px">✕ 삭제</button>
+    </div>
+    <label class="f-label">상품명 <span style="color:var(--danger)">*</span></label>
+    <input class="f-input sns-pname" placeholder="예: 클라우드몬스터 3" style="margin-bottom:8px">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div style="flex:1">
+        <label class="f-label">할인율</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input class="f-input sns-pdiscount" type="number" min="0" max="100" placeholder="0" style="margin-bottom:0">
+          <span style="color:var(--text-sub);font-size:14px">%</span>
+        </div>
+      </div>
+      <div style="flex:1">
+        <label class="f-label">판매금액</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input class="f-input sns-pprice" type="number" min="0" placeholder="0" style="margin-bottom:0">
+          <span style="color:var(--text-sub);font-size:14px">원</span>
+        </div>
+      </div>
+    </div>`;
+  container.appendChild(block);
+  if(container.querySelectorAll('.product-block').length >= 10) {
+    document.getElementById('sns-add-btn').style.display = 'none';
+  }
+}
+function snsRemoveProduct(btn) {
+  btn.closest('.product-block').remove();
+  document.getElementById('sns-add-btn').style.display = '';
+  document.querySelectorAll('#sns-products-container .product-block').forEach((b,i)=>{
+    const label = b.querySelector('span[style*="text-sub"]');
+    if(label) label.textContent = '상품 '+(i+1);
+  });
 }
 
 // ══════════════════════════════════════
-// TOAST
+// TAB DATA STATE & LOADER
 // ══════════════════════════════════════
+
+const tabState = {
+  issue:    { data: null, filters: { period: 'all', status: '전체' } },
+  noreason: { data: null, filters: { period: 'all', category: '전체' } },
+  note:     { data: null, filters: { period: 'all', level: '전체', followUpOnly: false } },
+  safesize: { data: null, filters: { period: 'all', purchased: '전체' } },
+  sns:      { data: null, filters: { period: 'all', purchased: '전체' } },
+};
+
+function loadTabData(tabType, filters) {
+  if(filters) tabState[tabType].filters = Object.assign(tabState[tabType].filters, filters);
+  const f = tabState[tabType].filters;
+
+  const tabBodyId = {
+    issue:    'tab-issue-body',
+    noreason: 'tab-noreason-body',
+    note:     'tab-note-body',
+    safesize: 'tab-safesize-body',
+    sns:      'tab-sns-body',
+  }[tabType];
+
+  const body = document.getElementById(tabBodyId);
+  if(body) body.innerHTML = '<div class="tab-loading">불러오는 중...</div>';
+
+  if(IS_GAS) {
+    google.script.run
+      .withSuccessHandler(data => {
+        tabState[tabType].data = data;
+        renderTab(tabType, data);
+      })
+      .withFailureHandler(err => {
+        if(body) body.innerHTML = `<div class="empty">데이터 로딩 실패: ${esc(String(err))}</div>`;
+      })
+      .getTabData(tabType, f);
+  } else {
+    // Mock 데이터
+    setTimeout(() => {
+      const mock = buildMockTabData(tabType);
+      tabState[tabType].data = mock;
+      renderTab(tabType, mock);
+    }, 300);
+  }
+}
+
+function renderTab(tabType, data) {
+  if(tabType === 'issue')    renderTabIssue(data);
+  if(tabType === 'noreason') renderTabNoReason(data);
+  if(tabType === 'note')     renderTabNote(data);
+  if(tabType === 'safesize') renderTabSafeSize(data);
+  if(tabType === 'sns')      renderTabSns(data);
+}
+
+// ══════════════════════════════════════
+// TAB RENDER HELPERS
+// ══════════════════════════════════════
+
+function tabKpiHtml(items) {
+  return items.map(it=>`
+    <div class="tab-kpi-item">
+      <div class="tab-kpi-value">${esc(String(it.value))}</div>
+      <div class="tab-kpi-label">${esc(it.label)}</div>
+    </div>`).join('');
+}
+
+function tabFilterBtnHtml(groupKey, options, current) {
+  return options.map(o =>
+    `<button class="tab-filter-btn${current===o?' active':''}"
+      onclick="applyTabFilter('${groupKey}','${o}')">${esc(o)}</button>`
+  ).join('');
+}
+
+function applyTabFilter(key, value) {
+  // key 예: 'issue:status', 'noreason:category' 등
+  const [tabType, filterKey] = key.split(':');
+  if(filterKey === 'followUpOnly') {
+    tabState[tabType].filters.followUpOnly = (value === 'Y');
+  } else {
+    tabState[tabType].filters[filterKey] = value;
+  }
+  loadTabData(tabType);
+}
+
+// ══════════════════════════════════════
+// 제품이슈 탭 렌더링
+// ══════════════════════════════════════
+
+function renderTabIssue(d) {
+  if(!d) return;
+  const f        = tabState.issue.filters;
+  const kpi      = d.kpi      || {};
+  const breakdown= d.breakdown|| [];
+  const list     = d.list     || [];
+
+  // KPI
+  document.getElementById('tab-issue-kpi').innerHTML = tabKpiHtml([
+    { value: kpi.pending    || 0, label: '미처리' },
+    { value: kpi.inProgress || 0, label: '확인중' },
+    { value: kpi.thisWeek   || 0, label: '이번 주 등록' },
+  ]);
+
+  // 유형별 분석
+  const bk = document.getElementById('tab-issue-breakdown');
+  if(bk) bk.innerHTML = breakdown.map(b=>
+    `<span class="breakdown-badge">${esc(b.label)} ${b.count}건</span>`
+  ).join('');
+
+  // 상태 필터
+  document.getElementById('tab-issue-filter').innerHTML =
+    tabFilterBtnHtml('issue:status', ['전체','미확인','확인중','처리완료'], f.status) +
+    `<div style="margin-top:6px">` +
+    ['all','today','week'].map(v=>{
+      const label = v==='all'?'전체':v==='today'?'오늘':'이번주';
+      return `<button class="tab-filter-btn${f.period===v?' active':''}"
+        onclick="applyTabFilter('issue:period','${v}')">${label}</button>`;
+    }).join('') + `</div>`;
+
+  // 리스트
+  const body = document.getElementById('tab-issue-body');
+  if(!list.length) {
+    body.innerHTML = '<div class="empty">해당 조건의 이슈가 없습니다.</div>';
+    return;
+  }
+  const STATUS_COLORS = { '미확인':'var(--danger)', '확인중':'var(--warn)', '처리완료':'var(--good)' };
+  body.innerHTML = list.map(item => `
+    <div class="tab-list-item" data-tab="issue" data-id="${esc(item.rowIndex)}" onclick="openDetailModalById(this)">
+      <div class="tab-list-header">
+        <span class="issue-type type-${esc(item.type)}">${esc(item.typeLabel||item.type)}</span>
+        <span class="tab-status-dot" style="color:${STATUS_COLORS[item.status]||'var(--text-sub)'}">● ${esc(item.status)}</span>
+      </div>
+      <div class="tab-list-title">${esc(item.brand)} ${esc(item.product)}${item.size?' '+esc(item.size):''}${item.color?' · '+esc(item.color):''}</div>
+      <div class="tab-list-desc">${esc(item.content)}</div>
+      <div class="tab-list-meta">${esc(item.date)} · ${esc(item.author)}${item.resolver?' · '+esc(item.resolver)+' 처리':''}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+// 미구매 탭 렌더링
+// ══════════════════════════════════════
+
+function renderTabNoReason(d) {
+  if(!d) return;
+  const f        = tabState.noreason.filters;
+  const kpi      = d.kpi      || {};
+  const breakdown= d.breakdown|| [];
+  const list     = d.list     || [];
+
+  document.getElementById('tab-noreason-kpi').innerHTML = tabKpiHtml([
+    { value: kpi.today     || 0,   label: '오늘 등록' },
+    { value: kpi.week      || 0,   label: '이번 주 등록' },
+    { value: kpi.topReason || '-', label: '최다 사유' },
+  ]);
+
+  // 사유별 분석 바
+  const bk = document.getElementById('tab-noreason-breakdown');
+  if(bk) bk.innerHTML = breakdown.slice(0,5).map(b=>`
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
+        <span>${esc(b.reason)}</span>
+        <span style="color:var(--text-sub)">${b.count}건 ${b.pct}%</span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:3px">
+        <div style="height:100%;width:${b.pct}%;background:var(--accent);border-radius:3px"></div>
+      </div>
+    </div>`).join('');
+
+  // 필터
+  document.getElementById('tab-noreason-filter').innerHTML =
+    tabFilterBtnHtml('noreason:category', ['전체','신발','의류','용품','기타'], f.category) +
+    `<div style="margin-top:6px">` +
+    ['all','today','week'].map(v=>{
+      const label = v==='all'?'전체':v==='today'?'오늘':'이번주';
+      return `<button class="tab-filter-btn${f.period===v?' active':''}"
+        onclick="applyTabFilter('noreason:period','${v}')">${label}</button>`;
+    }).join('') + `</div>`;
+
+  // 리스트
+  const body = document.getElementById('tab-noreason-body');
+  if(!list.length) {
+    body.innerHTML = '<div class="empty">해당 조건의 미구매 기록이 없습니다.</div>';
+    return;
+  }
+  body.innerHTML = list.map(item => `
+    <div class="tab-list-item" data-tab="noreason" data-id="${esc(item.rowIndex)}" onclick="openDetailModalById(this)">
+      <div class="tab-list-header">
+        <span class="breakdown-badge">${esc(item.category)}</span>
+        <span class="breakdown-badge" style="background:var(--warn-bg);color:#92400E">${esc(item.reason)}</span>
+      </div>
+      <div class="tab-list-title">${item.brand?esc(item.brand)+' ':''}${esc(item.product||'상품명 없음')}</div>
+      <div class="tab-list-meta">${esc(item.date)} · ${esc(item.author)}${item.memo?' · '+esc(item.memo):''}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+// 특이사항 탭 렌더링
+// ══════════════════════════════════════
+
+function renderTabNote(d) {
+  if(!d) return;
+  const f        = tabState.note.filters;
+  const kpi      = d.kpi      || {};
+  const breakdown= d.breakdown|| [];
+  const list     = d.list     || [];
+
+  document.getElementById('tab-note-kpi').innerHTML = tabKpiHtml([
+    { value: kpi.today    || 0, label: '오늘' },
+    { value: kpi.followUp || 0, label: '후속조치 필요' },
+    { value: kpi.week     || 0, label: '이번 주' },
+  ]);
+
+  const LEVEL_COLORS = { '높음':'var(--danger)', '보통':'var(--warn)', '낮음':'var(--text-hint)' };
+  const bk = document.getElementById('tab-note-breakdown');
+  if(bk) bk.innerHTML = breakdown.map(b=>
+    `<span class="breakdown-badge" style="color:${LEVEL_COLORS[b.level]||'inherit'}">${esc(b.level)} ${b.count}건</span>`
+  ).join('');
+
+  document.getElementById('tab-note-filter').innerHTML =
+    tabFilterBtnHtml('note:level', ['전체','높음','보통','낮음'], f.level) +
+    `<button class="tab-filter-btn${f.followUpOnly?' active':''}"
+      onclick="applyTabFilter('note:followUpOnly','${f.followUpOnly?'N':'Y'}')" style="margin-left:6px">
+      후속조치 필요만
+    </button>` +
+    `<div style="margin-top:6px">` +
+    ['all','today','week'].map(v=>{
+      const label = v==='all'?'전체':v==='today'?'오늘':'이번주';
+      return `<button class="tab-filter-btn${f.period===v?' active':''}"
+        onclick="applyTabFilter('note:period','${v}')">${label}</button>`;
+    }).join('') + `</div>`;
+
+  const body = document.getElementById('tab-note-body');
+  if(!list.length) {
+    body.innerHTML = '<div class="empty">해당 조건의 특이사항이 없습니다.</div>';
+    return;
+  }
+  body.innerHTML = list.map(item => `
+    <div class="tab-list-item" data-tab="note" data-id="${esc(item.rowIndex)}" onclick="openDetailModalById(this)">
+      <div class="tab-list-header">
+        <span class="breakdown-badge" style="color:${LEVEL_COLORS[item.level]||'inherit'}">${esc(item.level)}</span>
+        ${item.followUp?'<span class="breakdown-badge" style="background:var(--danger-bg);color:var(--danger)">후속조치 필요</span>':''}
+        ${item.managerMemo?'<span class="breakdown-badge" style="background:var(--good-bg);color:var(--good)">점장 메모 있음</span>':''}
+      </div>
+      <div class="tab-list-title">${esc(item.content)}</div>
+      <div class="tab-list-meta">${esc(item.date)} · ${esc(item.author)}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+// 세이프사이즈 탭 렌더링
+// ══════════════════════════════════════
+
+// data-id 방식으로 상세 모달 열기 (sessionId 특수문자 안전 처리)
+function openDetailModalById(el) {
+  const tabType = el.getAttribute('data-tab');
+  const id      = el.getAttribute('data-id');
+  openDetailModal(tabType, id);
+}
+
+function renderTabSafeSize(d) {
+  if(!d) return;
+  const f        = tabState.safesize.filters;
+  const kpi      = d.kpi      || {};
+  const breakdown= d.breakdown|| {};
+  const list     = d.list    || [];
+
+  document.getElementById('tab-safesize-kpi').innerHTML = tabKpiHtml([
+    { value: kpi.todayCount || 0,                               label: '오늘 진행' },
+    { value: kpi.todayRate != null ? kpi.todayRate+'%' : '-',  label: '오늘 전환율' },
+    { value: kpi.weekRate  != null  ? kpi.weekRate+'%'  : '-',  label: '이번 주 전환율' },
+  ]);
+
+  const bk = document.getElementById('tab-safesize-breakdown');
+  if(bk) {
+    const purposeHtml = (breakdown.purpose||[]).map(b=>
+      `<span class="breakdown-badge">${esc(b.label)} ${b.count}명</span>`).join('');
+    const topHtml = (breakdown.topProducts||[]).map((p,i)=>
+      `<span class="breakdown-badge" style="background:var(--bg)">${i+1}. ${esc(p.name)}</span>`).join('');
+    bk.innerHTML = purposeHtml + (topHtml ? `<div style="margin-top:6px">${topHtml}</div>` : '');
+  }
+
+  document.getElementById('tab-safesize-filter').innerHTML =
+    tabFilterBtnHtml('safesize:purchased', ['전체','구매O','구매X'], f.purchased) +
+    `<div style="margin-top:6px">` +
+    ['all','today','week'].map(v=>{
+      const label = v==='all'?'전체':v==='today'?'오늘':'이번주';
+      return `<button class="tab-filter-btn${f.period===v?' active':''}"
+        onclick="applyTabFilter('safesize:period','${v}')">${label}</button>`;
+    }).join('') + `</div>`;
+
+  const body = document.getElementById('tab-safesize-body');
+  if(!list||list.length===0) {
+    body.innerHTML = '<div class="empty">해당 조건의 세이프사이즈 기록이 없습니다.</div>';
+    return;
+  }
+  body.innerHTML = list.map(item => `
+    <div class="tab-list-item" data-tab="safesize" data-id="${esc(item.sessionId)}" onclick="openDetailModalById(this)">
+      <div class="tab-list-header">
+        <span class="breakdown-badge" style="background:${item.proceeded==='Y'?'var(--good-bg)':'var(--border)'};color:${item.proceeded==='Y'?'var(--good)':'var(--text-sub)'}">
+          진행${item.proceeded==='Y'?'O':'X'}
+        </span>
+        <span class="breakdown-badge" style="background:${item.purchased==='Y'?'var(--accent)':'var(--border)'};color:${item.purchased==='Y'?'#fff':'var(--text-sub)'}">
+          구매${item.purchased==='Y'?'O':'X'}
+        </span>
+      </div>
+      <div class="tab-list-title">${(item.products||[]).length>0 ? (item.products||[]).map(p=>esc(p.name)).join(', ') : esc(item.purpose||'상품 없음')}</div>
+      ${(item.products||[]).length>0&&(item.products||[])[0].price>0?`<div class="tab-list-desc">${(item.products||[]).map(p=>p.price>0?esc(p.name)+' '+fmt(p.price)+'원'+(p.discount?' ('+esc(p.discount)+'% 할인)':''):'').filter(Boolean).join(' · ')}</div>`:''}
+      <div class="tab-list-meta">${esc(item.date)} · ${esc(item.author)}${item.purpose?' · '+esc(item.purpose):''}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+// SNS 인증 탭 렌더링
+// ══════════════════════════════════════
+
+function renderTabSns(d) {
+  if(!d) return;
+  const f        = tabState.sns.filters;
+  const kpi      = d.kpi      || {};
+  const breakdown= d.breakdown|| {};
+  const list     = d.list    || [];
+
+  document.getElementById('tab-sns-kpi').innerHTML = tabKpiHtml([
+    { value: kpi.todayCount || 0,                               label: '오늘 참여' },
+    { value: kpi.todayRate != null ? kpi.todayRate+'%' : '-',  label: '오늘 전환율' },
+    { value: kpi.weekRate  != null  ? kpi.weekRate+'%'  : '-',  label: '이번 주 전환율' },
+  ]);
+
+  const bk = document.getElementById('tab-sns-breakdown');
+  if(bk) {
+    const chHtml = (breakdown.channel||[]).map(b=>
+      `<span class="breakdown-badge">${esc(b.label)} ${b.count}건</span>`).join('');
+    const topHtml = (breakdown.topProducts||[]).map((p,i)=>
+      `<span class="breakdown-badge" style="background:var(--bg)">${i+1}. ${esc(p.name)}</span>`).join('');
+    bk.innerHTML = chHtml + (topHtml ? `<div style="margin-top:6px">${topHtml}</div>` : '');
+  }
+
+  document.getElementById('tab-sns-filter').innerHTML =
+    tabFilterBtnHtml('sns:purchased', ['전체','구매O','구매X'], f.purchased) +
+    `<div style="margin-top:6px">` +
+    ['all','today','week'].map(v=>{
+      const label = v==='all'?'전체':v==='today'?'오늘':'이번주';
+      return `<button class="tab-filter-btn${f.period===v?' active':''}"
+        onclick="applyTabFilter('sns:period','${v}')">${label}</button>`;
+    }).join('') + `</div>`;
+
+  const body = document.getElementById('tab-sns-body');
+  if(!list||list.length===0) {
+    body.innerHTML = '<div class="empty">해당 조건의 SNS 인증 기록이 없습니다.</div>';
+    return;
+  }
+  body.innerHTML = list.map(item => `
+    <div class="tab-list-item" data-tab="sns" data-id="${esc(item.sessionId)}" onclick="openDetailModalById(this)">
+      <div class="tab-list-header">
+        <span class="breakdown-badge" style="background:${item.participated==='Y'?'var(--good-bg)':'var(--border)'};color:${item.participated==='Y'?'var(--good)':'var(--text-sub)'}">
+          참여${item.participated==='Y'?'O':'X'}
+        </span>
+        <span class="breakdown-badge" style="background:${item.purchased==='Y'?'var(--accent)':'var(--border)'};color:${item.purchased==='Y'?'#fff':'var(--text-sub)'}">
+          구매${item.purchased==='Y'?'O':'X'}
+        </span>
+        ${item.channel?`<span class="breakdown-badge">${esc(item.channel)}</span>`:''}
+      </div>
+      <div class="tab-list-title">${(item.products||[]).length>0 ? (item.products||[]).map(p=>esc(p.name)).join(', ') : '상품 없음'}</div>
+      ${(item.products||[]).length>0&&(item.products||[])[0].price>0?`<div class="tab-list-desc">${(item.products||[]).map(p=>p.price>0?esc(p.name)+' '+fmt(p.price)+'원'+(p.discount?' ('+esc(p.discount)+'% 할인)':''):'').filter(Boolean).join(' · ')}</div>`:''}
+      <div class="tab-list-meta">${esc(item.date)} · ${esc(item.author)}${(item.benefit||item.benefitGiven||'')==='Y'?' · 혜택제공':''}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+// 상세 보기 팝업
+// ══════════════════════════════════════
+
+function openDetailModal(tabType, id) {
+  const data = tabState[tabType]?.data;
+  if(!data) return;
+
+  let item = null;
+  if(tabType === 'issue' || tabType === 'noreason' || tabType === 'note') {
+    item = (data.list||[]).find(r => String(r.rowIndex) === String(id));
+  } else {
+    item = (data.list||[]).find(r => String(r.sessionId) === String(id));
+  }
+  if(!item) return;
+
+  let modal = document.getElementById('detail-modal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'detail-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;display:flex;align-items:flex-end;justify-content:center;padding:0';
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `
+    <div style="background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:85vh;overflow-y:auto;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:17px;font-weight:700">${getDetailTitle(tabType)}</div>
+        <button onclick="closeDetailModal()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--text-sub)">✕</button>
+      </div>
+      ${buildDetailContent(tabType, item)}
+    </div>`;
+  modal.style.display = 'flex';
+}
+
+function closeDetailModal() {
+  const modal = document.getElementById('detail-modal');
+  if(modal) modal.style.display = 'none';
+}
+
+function getDetailTitle(tabType) {
+  return { issue:'제품 이슈 상세', noreason:'미구매 상세', note:'특이사항 상세', safesize:'세이프사이즈 상세', sns:'SNS 인증 상세' }[tabType] || '상세 보기';
+}
+
+function buildDetailContent(tabType, item) {
+  const row = (label, val) => val ? `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-val">${esc(String(val))}</span></div>` : '';
+
+  if(tabType === 'issue') {
+    return `
+      <div class="detail-section">
+        ${row('등록일', item.date)}
+        ${row('작성자', item.author)}
+        ${row('이슈 유형', item.typeLabel||item.type)}
+        ${row('브랜드', item.brand)}
+        ${row('상품명', item.product)}
+        ${row('색상', item.color)}
+        ${row('사이즈', item.size)}
+        ${item.erpStock||item.realStock ? row('ERP재고 / 실재고', (item.erpStock||'-')+' / '+(item.realStock||'-')) : ''}
+        ${row('이슈 내용', item.content)}
+      </div>
+      <div class="detail-section detail-edit">
+        <div style="font-size:13px;font-weight:700;color:var(--text-sub);margin-bottom:12px">처리 관리</div>
+        <div style="margin-bottom:10px">
+          <label class="f-label">처리 상태</label>
+          <div class="btn-group" id="detail-issue-status-group">
+            ${['미확인','확인중','처리완료'].map(s=>
+              `<button class="btn-opt${item.status===s?' sel':''}"
+                onclick="detailSelStatus('${s}')">${s}</button>`
+            ).join('')}
+          </div>
+          <input type="hidden" id="detail-issue-status" value="${esc(item.status)}">
+        </div>
+        <label class="f-label">처리자</label>
+        <input class="f-input" id="detail-issue-resolver" value="${esc(item.resolver)}" placeholder="처리자 이름" style="margin-bottom:10px">
+        <label class="f-label">점장 메모</label>
+        <textarea class="f-input ta" id="detail-issue-memo" placeholder="점장 메모를 입력하세요" style="min-height:70px;margin-bottom:16px">${esc(item.managerMemo)}</textarea>
+        <button class="btn-save" onclick="submitIssueDetail('${esc(item.rowIndex)}')">저장하기</button>
+      </div>`;
+  }
+
+  if(tabType === 'noreason') {
+    return `<div class="detail-section">
+      ${row('등록일', item.date)}
+      ${row('작성자', item.author)}
+      ${row('카테고리', item.category)}
+      ${row('브랜드', item.brand)}
+      ${row('상품명', item.product)}
+      ${row('사이즈', item.size)}
+      ${row('미구매 사유', item.reason)}
+      ${row('메모', item.memo)}
+    </div>`;
+  }
+
+  if(tabType === 'note') {
+    return `
+      <div class="detail-section">
+        ${row('등록일', item.date)}
+        ${row('작성자', item.author)}
+        ${row('중요도', item.level)}
+        ${row('내용', item.content)}
+      </div>
+      <div class="detail-section detail-edit">
+        <div style="font-size:13px;font-weight:700;color:var(--text-sub);margin-bottom:12px">점장 확인</div>
+        <div style="margin-bottom:10px">
+          <label class="f-label">후속 조치 필요</label>
+          <div class="btn-group">
+            <button class="btn-opt${item.followUp?' sel':''}" onclick="detailSelFollowUp('Y')">필요</button>
+            <button class="btn-opt${!item.followUp?' sel':''}" onclick="detailSelFollowUp('N')">불필요</button>
+          </div>
+          <input type="hidden" id="detail-note-followup" value="${item.followUp?'Y':'N'}">
+        </div>
+        <label class="f-label">점장 메모</label>
+        <textarea class="f-input ta" id="detail-note-memo" placeholder="점장 메모를 입력하세요" style="min-height:70px;margin-bottom:16px">${esc(item.managerMemo)}</textarea>
+        <button class="btn-save" onclick="submitNoteDetail('${esc(item.rowIndex)}')">저장하기</button>
+      </div>`;
+  }
+
+  if(tabType === 'safesize') {
+    const products = item.products || [];
+    const prods = products.length > 0
+      ? products.map(p=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)">${esc(p.name)}${p.price>0?' — '+fmt(p.price)+'원':''}${p.discount?' ('+esc(p.discount)+'% 할인)':''}</div>`).join('')
+      : '<div style="color:var(--text-hint)">구매 상품 없음</div>';
+    return `<div class="detail-section">
+      ${row('등록일', item.date)}
+      ${row('작성자', item.author)}
+      ${row('진행 여부', item.proceeded==='Y'?'진행함':'진행 안 함')}
+      ${row('러닝 목적', item.purpose)}
+      ${row('구매 여부', item.purchased==='Y'?'구매함':'구매 안 함')}
+      <div class="detail-row" style="flex-direction:column;align-items:flex-start">
+        <span class="detail-label" style="margin-bottom:6px">구매 상품</span>
+        ${prods}
+      </div>
+      ${row('고객 반응 메모', item.memo)}
+    </div>`;
+  }
+
+  if(tabType === 'sns') {
+    const products = item.products || [];
+    const prods = products.length > 0
+      ? products.map(p=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)">${esc(p.name)}${p.price>0?' — '+fmt(p.price)+'원':''}${p.discount?' ('+esc(p.discount)+'% 할인)':''}</div>`).join('')
+      : '<div style="color:var(--text-hint)">구매 상품 없음</div>';
+    return `<div class="detail-section">
+      ${row('등록일', item.date)}
+      ${row('작성자', item.author)}
+      ${row('참여 여부', item.participated==='Y'?'참여함':'참여 안 함')}
+      ${row('인증 채널', item.channel)}
+      ${row('구매 여부', item.purchased==='Y'?'구매함':'구매 안 함')}
+      <div class="detail-row" style="flex-direction:column;align-items:flex-start">
+        <span class="detail-label" style="margin-bottom:6px">구매 상품</span>
+        ${prods}
+      </div>
+      ${row('혜택 제공', (item.benefit||item.benefitGiven||'')==='Y'?'제공함':'미제공')}
+      ${row('고객 반응 메모', item.memo)}
+    </div>`;
+  }
+  return '';
+}
+
+function detailSelStatus(val) {
+  document.querySelectorAll('#detail-issue-status-group .btn-opt').forEach(b=>b.classList.toggle('sel', b.textContent.trim()===val));
+  document.getElementById('detail-issue-status').value = val;
+}
+function detailSelFollowUp(val) {
+  document.getElementById('detail-note-followup').value = val;
+  document.querySelectorAll('#detail-note-followup').forEach(()=>{});
+  const btns = document.querySelectorAll('.detail-edit .btn-opt');
+  btns.forEach(b => b.classList.toggle('sel', (val==='Y'&&b.textContent.trim()==='필요')||(val==='N'&&b.textContent.trim()==='불필요')));
+}
+function submitIssueDetail(rowIndex) {
+  const status   = document.getElementById('detail-issue-status').value;
+  const resolver = document.getElementById('detail-issue-resolver').value.trim();
+  const memo     = document.getElementById('detail-issue-memo').value.trim();
+  if(!resolver){showToast('처리자 이름을 입력해주세요.',true);return;}
+  saveData('issue_status', { type:'issue_status', rowIndex, status, resolver, managerMemo:memo },
+    ()=>{ closeDetailModal(); showToast('저장되었습니다.'); loadTabData('issue'); loadDashboardData(); },
+    err=>showToast('저장 실패: '+(err||'오류'),true)
+  );
+}
+function submitNoteDetail(rowIndex) {
+  const followUp    = document.getElementById('detail-note-followup').value;
+  const managerMemo = document.getElementById('detail-note-memo').value.trim();
+  saveData('note_detail', { type:'note_detail', rowIndex, followUp, managerMemo },
+    ()=>{ closeDetailModal(); showToast('저장되었습니다.'); loadTabData('note'); loadDashboardData(); },
+    err=>showToast('저장 실패: '+(err||'오류'),true)
+  );
+}
+
+// Mock 데이터 (브라우저 직접 열기 테스트용)
+function buildMockTabData(tabType) {
+  if(tabType==='issue') return { kpi:{pending:2,inProgress:1,thisWeek:3}, breakdown:[{label:'사이즈 부족',count:2},{label:'ERP 재고 불일치',count:1}], list:[{rowIndex:2,date:'2026-05-22',author:'임창성',type:'size_shortage',typeLabel:'사이즈 부족',brand:'나이키',product:'페가수스 42',color:'',size:'275',erpStock:'3',realStock:'0',content:'275 재고 없음',status:'미확인',resolvedAt:'',resolver:'',managerMemo:''}], total:1 };
+  if(tabType==='noreason') return { kpi:{today:2,week:5,topReason:'사이즈/재고 부족'}, breakdown:[{reason:'사이즈/재고 부족',count:3,pct:60},{reason:'가격 부담',count:2,pct:40}], list:[{rowIndex:2,date:'2026-05-22',author:'승호 강',category:'신발',brand:'온러닝',product:'클라우드몬스터 3',size:'270',reason:'사이즈/재고 부족',memo:''}], total:1 };
+  if(tabType==='note') return { kpi:{today:1,followUp:1,week:2}, breakdown:[{level:'높음',count:1},{level:'보통',count:1},{level:'낮음',count:0}], list:[{rowIndex:2,date:'2026-05-22',author:'승호 강',level:'높음',content:'러닝 크루 단체 방문 예정',followUp:true,managerMemo:''}], total:1 };
+  if(tabType==='safesize') return { kpi:{todayCount:3,todayRate:67,weekRate:60}, breakdown:{purpose:[{label:'대회 준비',count:2},{label:'건강 달리기',count:1}],topProducts:[{name:'클라우드몬스터 3',count:2}]}, list:[{rowIndex:2,sessionId:'2026-05-22_001',date:'2026-05-22',author:'승호 강',proceeded:'Y',purpose:'대회 준비',purchased:'Y',memo:'만족',products:[{name:'클라우드몬스터 3',discount:'10',price:180000}]}], total:1 };
+  if(tabType==='sns') return { kpi:{todayCount:2,todayRate:50,weekRate:45}, breakdown:{channel:[{label:'인스타그램',count:2}],topProducts:[{name:'마인드 001',count:1}]}, list:[{rowIndex:2,sessionId:'2026-05-22_002',date:'2026-05-22',author:'임창성',participated:'Y',channel:'인스타그램',purchased:'Y',benefit:'Y',memo:'',products:[{name:'마인드 001',discount:'',price:108182}]}], total:1 };
+  return { kpi:{}, breakdown:[], list:[], total:0 };
+}
+
+// 금액 포맷
+function fmt(n) { return Number(n||0).toLocaleString('ko-KR'); }
+
+// ══════════════════════════════════════
+// 등록 모달 (기존 폼을 팝업으로)
+// ══════════════════════════════════════
+function openRegisterModal(tabType) {
+  let modal = document.getElementById('register-modal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'register-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:998;display:flex;align-items:flex-end;justify-content:center;padding:0';
+    modal.onclick = (e) => { if(e.target===modal) closeRegisterModal(); };
+    document.body.appendChild(modal);
+  }
+  const titles = { issue:'제품 이슈 등록', noreason:'미구매 사유 등록', note:'특이사항 등록', safesize:'세이프사이즈 체크', sns:'SNS 인증 체크' };
+  modal.innerHTML = `
+    <div class="register-modal-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:17px;font-weight:700">${esc(titles[tabType]||'등록')}</div>
+        <button onclick="closeRegisterModal()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--text-sub)">✕</button>
+      </div>
+      <div id="register-modal-form">${buildRegisterForm(tabType)}</div>
+    </div>`;
+  window._registerModalTabType = tabType;
+  modal.style.display = 'flex';
+}
+
+function closeRegisterModal() {
+  const modal = document.getElementById('register-modal');
+  if(modal) modal.style.display = 'none';
+}
+
+function buildRegisterForm(tabType) {
+  if(tabType === 'issue') return `
+    <div class="form-step">
+      <div class="step-label">이슈 유형 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" data-key="erp_mismatch" onclick="sel(this,'issueType')">ERP 재고 불일치</button>
+        <button class="btn-opt" data-key="size_shortage" onclick="sel(this,'issueType')">사이즈 부족</button>
+        <button class="btn-opt" data-key="product_damage" onclick="sel(this,'issueType')">제품 파손/오염/불량</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">브랜드 <span class="req">*</span></label><input class="f-input" id="i-brand" placeholder="예: 나이키"></div>
+        <div><label class="f-label">상품명 <span class="req">*</span></label><input class="f-input" id="i-product" placeholder="예: 페가수스 42"></div>
+      </div>
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">색상</label><input class="f-input" id="i-color" placeholder="예: 블랙"></div>
+        <div><label class="f-label">사이즈</label><input class="f-input" id="i-size" placeholder="예: 275"></div>
+      </div>
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">ERP 재고</label><input class="f-input" id="i-erp" type="number" placeholder="0"></div>
+        <div><label class="f-label">실재고</label><input class="f-input" id="i-real" type="number" placeholder="0"></div>
+      </div>
+      <label class="f-label">이슈 내용 <span class="req">*</span></label>
+      <textarea class="f-input ta" id="i-content" placeholder="이슈 내용을 입력하세요" style="margin-bottom:10px"></textarea>
+      <label class="f-label">작성자</label>
+      <input class="f-input" id="i-author" placeholder="이름">
+    </div>
+    <button class="btn-save" id="btn-issue" onclick="submitFormModal('issue')">저장하기</button>`;
+
+  if(tabType === 'noreason') return `
+    <div class="form-step">
+      <div class="step-label">카테고리 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" onclick="sel(this,'nr-cat')">신발</button>
+        <button class="btn-opt" onclick="sel(this,'nr-cat')">의류</button>
+        <button class="btn-opt" onclick="sel(this,'nr-cat')">용품</button>
+        <button class="btn-opt" onclick="sel(this,'nr-cat')">기타</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="step-label">미구매 사유 <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group">
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">사이즈/재고 부족</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">착화감 불만</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">가격 부담</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">디자인/컬러 불만</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">원하는 상품/브랜드 없음</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">비교 후 고민</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">구매 시점 아님</button>
+        <button class="btn-opt" onclick="sel(this,'nr-reason')">기타/직원 메모 필요</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">브랜드</label><input class="f-input" id="nr-brand" placeholder="예: 온러닝"></div>
+        <div><label class="f-label">상품명</label><input class="f-input" id="nr-product" placeholder="예: 클라우드몬스터 3"></div>
+      </div>
+      <div class="f-grid" style="margin-bottom:10px">
+        <div><label class="f-label">사이즈</label><input class="f-input" id="nr-size" placeholder="예: 260"></div>
+        <div><label class="f-label">작성자</label><input class="f-input" id="nr-author" placeholder="이름"></div>
+      </div>
+      <label class="f-label">메모</label>
+      <textarea class="f-input ta" id="nr-memo" placeholder="추가 메모" style="min-height:70px"></textarea>
+    </div>
+    <button class="btn-save" id="btn-noreason" onclick="submitFormModal('noreason')">저장하기</button>`;
+
+  if(tabType === 'note') return `
+    <div class="form-step">
+      <div class="step-label">내용 <span style="color:var(--danger)">*</span></div>
+      <textarea class="f-input ta" id="note-content" placeholder="예: 러닝 크루 단체 방문 예정 (오후 3시)" style="min-height:100px"></textarea>
+    </div>
+    <div class="form-step">
+      <div class="step-label">중요도</div>
+      <div class="btn-group" id="note-level-group">
+        <button class="btn-opt" onclick="sel(this,'note-level')">낮음</button>
+        <button class="btn-opt sel" onclick="sel(this,'note-level')">보통</button>
+        <button class="btn-opt" onclick="sel(this,'note-level')">높음</button>
+      </div>
+    </div>
+    <div class="form-step">
+      <div class="btn-group" id="note-followup-group" style="margin-bottom:12px">
+        <button class="btn-opt" onclick="sel(this,'note-followup')">후속 조치 필요</button>
+        <button class="btn-opt sel" onclick="sel(this,'note-followup')">불필요</button>
+      </div>
+      <label class="f-label">작성자</label>
+      <input class="f-input" id="note-author" placeholder="이름">
+    </div>
+    <button class="btn-save" id="btn-note" onclick="submitFormModal('note')">저장하기</button>`;
+
+  if(tabType === 'safesize') return `
+    <div class="form-step">
+      <div class="step-label">세이프사이즈 진행했나요? <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group" id="ss-proc-group">
+        <button class="btn-opt" data-key="Y" onclick="ssSel(this,'ss-proc-group','ss-proc','Y')">Y — 진행했어요</button>
+        <button class="btn-opt" data-key="N" onclick="ssSel(this,'ss-proc-group','ss-proc','N')">N — 진행 안 했어요</button>
+      </div>
+      <input type="hidden" id="ss-proc" value="">
+    </div>
+    <div class="form-step" id="ss-step2" style="display:none">
+      <div class="step-label">구매로 이어졌나요? <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group" id="ss-buy-group">
+        <button class="btn-opt" data-key="Y" onclick="ssSel(this,'ss-buy-group','ss-buy','Y')">Y — 구매했어요</button>
+        <button class="btn-opt" data-key="N" onclick="ssSel(this,'ss-buy-group','ss-buy','N')">N — 구매 안 했어요</button>
+      </div>
+      <input type="hidden" id="ss-buy" value="">
+    </div>
+    <div class="form-step" id="ss-step3" style="display:none">
+      <div class="step-label">구매 상품 정보</div>
+      <div id="ss-products-container"><div class="product-block" id="ss-product-1">
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">상품 1</div>
+        <label class="f-label">상품명 <span style="color:var(--danger)">*</span></label>
+        <input class="f-input ss-pname" placeholder="예: 클라우드몬스터 3" style="margin-bottom:8px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="flex:1"><label class="f-label">할인율</label><div style="display:flex;align-items:center;gap:4px"><input class="f-input ss-pdiscount" type="number" min="0" max="100" placeholder="0" style="margin-bottom:0"><span style="color:var(--text-sub);font-size:14px">%</span></div></div>
+          <div style="flex:1"><label class="f-label">판매금액</label><div style="display:flex;align-items:center;gap:4px"><input class="f-input ss-pprice" type="number" min="0" placeholder="0" style="margin-bottom:0"><span style="color:var(--text-sub);font-size:14px">원</span></div></div>
+        </div>
+      </div></div>
+      <button type="button" id="ss-add-btn" onclick="ssAddProduct()" style="width:100%;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--text-sub);cursor:pointer;font-size:14px;margin-top:4px">+ 상품 추가</button>
+    </div>
+    <div class="form-step" id="ss-step4" style="display:none">
+      <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">러닝 목적</div>
+      <div class="btn-group" style="margin-bottom:14px">
+        <button class="btn-opt" onclick="sel(this,'ss-purpose')">건강 달리기</button>
+        <button class="btn-opt" onclick="sel(this,'ss-purpose')">대회 준비</button>
+        <button class="btn-opt" onclick="sel(this,'ss-purpose')">부상 회복</button>
+        <button class="btn-opt" onclick="sel(this,'ss-purpose')">기타</button>
+      </div>
+      <label class="f-label">고객 반응 메모</label>
+      <textarea class="f-input ta" id="ss-memo" style="min-height:70px;margin-bottom:10px"></textarea>
+      <label class="f-label">작성자</label>
+      <input class="f-input" id="ss-author" placeholder="이름">
+    </div>
+    <button class="btn-save" id="btn-safesize" onclick="submitFormModal('safesize')">저장하기</button>`;
+
+  if(tabType === 'sns') return `
+    <div class="form-step">
+      <div class="step-label">SNS 인증 참여했나요? <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group" id="sns-part-group">
+        <button class="btn-opt" data-key="Y" onclick="snsSel(this,'sns-part-group','sns-part','Y')">Y — 참여했어요</button>
+        <button class="btn-opt" data-key="N" onclick="snsSel(this,'sns-part-group','sns-part','N')">N — 참여 안 했어요</button>
+      </div>
+      <input type="hidden" id="sns-part" value="">
+    </div>
+    <div class="form-step" id="sns-step2" style="display:none">
+      <div class="step-label">구매로 이어졌나요? <span style="color:var(--danger)">*</span></div>
+      <div class="btn-group" id="sns-buy-group">
+        <button class="btn-opt" data-key="Y" onclick="snsSel(this,'sns-buy-group','sns-buy','Y')">Y — 구매했어요</button>
+        <button class="btn-opt" data-key="N" onclick="snsSel(this,'sns-buy-group','sns-buy','N')">N — 구매 안 했어요</button>
+      </div>
+      <input type="hidden" id="sns-buy" value="">
+    </div>
+    <div class="form-step" id="sns-step3" style="display:none">
+      <div class="step-label">구매 상품 정보</div>
+      <div id="sns-products-container"><div class="product-block" id="sns-product-1">
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">상품 1</div>
+        <label class="f-label">상품명 <span style="color:var(--danger)">*</span></label>
+        <input class="f-input sns-pname" placeholder="예: 클라우드몬스터 3" style="margin-bottom:8px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="flex:1"><label class="f-label">할인율</label><div style="display:flex;align-items:center;gap:4px"><input class="f-input sns-pdiscount" type="number" min="0" max="100" placeholder="0" style="margin-bottom:0"><span style="color:var(--text-sub);font-size:14px">%</span></div></div>
+          <div style="flex:1"><label class="f-label">판매금액</label><div style="display:flex;align-items:center;gap:4px"><input class="f-input sns-pprice" type="number" min="0" placeholder="0" style="margin-bottom:0"><span style="color:var(--text-sub);font-size:14px">원</span></div></div>
+        </div>
+      </div></div>
+      <button type="button" id="sns-add-btn" onclick="snsAddProduct()" style="width:100%;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--text-sub);cursor:pointer;font-size:14px;margin-top:4px">+ 상품 추가</button>
+    </div>
+    <div class="form-step" id="sns-step4" style="display:none">
+      <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">인증 채널</div>
+      <div class="btn-group" style="margin-bottom:14px">
+        <button class="btn-opt" onclick="sel(this,'sns-ch')">인스타그램</button>
+        <button class="btn-opt" onclick="sel(this,'sns-ch')">블로그</button>
+        <button class="btn-opt" onclick="sel(this,'sns-ch')">기타</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">혜택 제공 여부</div>
+      <div class="btn-group" style="margin-bottom:14px">
+        <button class="btn-opt" onclick="sel(this,'sns-benefit')">Y — 제공했어요</button>
+        <button class="btn-opt" onclick="sel(this,'sns-benefit')">N — 미제공</button>
+      </div>
+      <label class="f-label">고객 반응 메모</label>
+      <textarea class="f-input ta" id="sns-memo" style="min-height:70px;margin-bottom:10px"></textarea>
+      <label class="f-label">작성자</label>
+      <input class="f-input" id="sns-author" placeholder="이름">
+    </div>
+    <button class="btn-save" id="btn-sns" onclick="submitFormModal('sns')">저장하기</button>`;
+  return '';
+}
+
+function submitFormModal(type) {
+  const payload = buildPayload(type);
+  if(!payload) return;
+  const btnId = {issue:'btn-issue',noreason:'btn-noreason',note:'btn-note',safesize:'btn-safesize',sns:'btn-sns'}[type];
+  const btn = document.getElementById(btnId);
+  if(btn){btn.disabled=true;btn.textContent='저장 중...';}
+  saveData(type, payload,
+    function() {
+      if(btn){btn.disabled=false;btn.textContent='저장하기';}
+      closeRegisterModal();
+      showToast('저장되었습니다.');
+      loadTabData(type);
+      loadDashboardData();
+    },
+    function(err) {
+      if(btn){btn.disabled=false;btn.textContent='저장하기';}
+      showToast('저장에 실패했습니다: '+(err||'알 수 없는 오류'), true);
+    }
+  );
+}
+
 function showToast(msg, isError) {
   const el=document.getElementById('toast');
   el.textContent=msg;
